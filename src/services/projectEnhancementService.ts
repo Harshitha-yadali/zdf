@@ -1,10 +1,9 @@
 import { ProjectSuggestion, ProjectEnhancementResult, SerpAPIResult, ManualProjectInput } from '../types/projectEnhancement';
 import { ResumeData } from '../types/resume';
 import { edenAITextService } from './edenAITextService';
+import { github } from './aiProxyService';
 
-const GITHUB_TOKEN = import.meta.env.VITE_GITHUB_API_TOKEN || '';
-
-console.log('ProjectEnhancementService: Using EdenAI + GitHub API');
+console.log('ProjectEnhancementService: Using EdenAI + GitHub API via Supabase proxy');
 
 class ProjectEnhancementService {
   // Search for relevant projects using GitHub API
@@ -21,29 +20,11 @@ class ProjectEnhancementService {
       console.log('🔑 Tech keywords extracted:', techKeywords.join(', '));
       console.log('🎯 Role keywords extracted:', roleKeywords.join(', '));
       
-      // Create GitHub search query
+      // Create GitHub search query via proxy
       const searchTerms = [...techKeywords.slice(0, 3), ...roleKeywords.slice(0, 2)].join(' ');
-      const query = encodeURIComponent(`${searchTerms} in:name,description,readme stars:>50`);
+      const query = `${searchTerms} in:name,description,readme stars:>50`;
       
-      const headers: HeadersInit = {
-        'Accept': 'application/vnd.github.v3+json'
-      };
-      
-      if (GITHUB_TOKEN) {
-        headers['Authorization'] = `token ${GITHUB_TOKEN}`;
-      }
-
-      const response = await fetch(
-        `https://api.github.com/search/repositories?q=${query}&sort=stars&order=desc&per_page=10`,
-        { headers }
-      );
-
-      if (!response.ok) {
-        console.warn(`GitHub API request failed: ${response.status}`);
-        return this.getFallbackProjects(jobDescription, requiredSkills);
-      }
-
-      const data = await response.json();
+      const data = await github.searchRepos(query, { sort: 'stars', order: 'desc', perPage: 10 });
       
       if (data.items && data.items.length > 0) {
         const results: SerpAPIResult[] = data.items.map((repo: any) => ({

@@ -74,7 +74,7 @@ async function handleEdenAI(action: string, params: any) {
     }
 
     case 'chat': {
-      const { prompt, provider = 'openai/gpt-4o-mini', temperature = 0.1, maxTokens = 4000 } = params;
+      const { prompt, provider = 'openai', temperature = 0.1, maxTokens = 4000 } = params;
       const res = await fetch('https://api.edenai.run/v2/text/chat', {
         method: 'POST',
         headers: { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },

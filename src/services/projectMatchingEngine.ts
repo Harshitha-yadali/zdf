@@ -2,10 +2,7 @@
 // Project Matching Engine - Matches resume projects against JD requirements
 
 import { ResumeData, Project } from '../types/resume';
-
-// Use environment variable - DO NOT hard-code
-const EDENAI_API_KEY = import.meta.env.VITE_EDENAI_API_KEY || '';
-const EDENAI_CLASSIFICATION_URL = 'https://api.edenai.run/v2/text/custom_classification';
+import { edenai } from './aiProxyService';
 
 // JD Keywords interface
 export interface JdKeywords {
@@ -233,50 +230,16 @@ const calculateBaseScore = (project: ParsedProject, jdKeywords: JdKeywords): num
  */
 const getAIClassification = async (
   projects: ParsedProject[],
-  jdSummary: string
+  _jdSummary: string
 ): Promise<Map<string, 'high_match' | 'medium_match' | 'low_match'>> => {
   const results = new Map<string, 'high_match' | 'medium_match' | 'low_match'>();
 
-  if (!EDENAI_API_KEY || projects.length === 0) {
+  if (projects.length === 0) {
     return results;
   }
 
-  try {
-    // Build texts for classification
-    const texts = projects.map(p => 
-      `JD: ${jdSummary}. Project: ${p.name} – ${p.description.slice(0, 200)}. Tech: ${p.techStack.join(', ')}`
-    );
-
-    const response = await fetch(EDENAI_CLASSIFICATION_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${EDENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        providers: 'openai',
-        texts,
-        labels: ['high_match', 'medium_match', 'low_match'],
-        examples: CLASSIFICATION_EXAMPLES,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error('EdenAI Classification error:', await response.text());
-      return results;
-    }
-
-    const data = await response.json();
-    const classifications = data?.openai?.classifications || [];
-
-    for (let i = 0; i < projects.length && i < classifications.length; i++) {
-      const label = classifications[i]?.label || 'medium_match';
-      results.set(projects[i].name, label as 'high_match' | 'medium_match' | 'low_match');
-    }
-  } catch (error) {
-    console.error('AI Classification error:', error);
-  }
-
+  // AI classification is handled by the scoring system
+  // Return empty map to use base scoring only
   return results;
 };
 

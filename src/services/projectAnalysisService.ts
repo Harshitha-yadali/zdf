@@ -1,10 +1,9 @@
 import { ResumeData } from '../types/resume';
 import { ProjectAnalysis, ProjectSuitabilityResult } from '../types/analysis';
 import { edenAITextService } from './edenAITextService';
+import { github } from './aiProxyService';
 
-const GITHUB_TOKEN = import.meta.env.VITE_GITHUB_API_TOKEN || '';
-
-console.log('ProjectAnalysisService: Using EdenAI + GitHub API');
+console.log('ProjectAnalysisService: Using EdenAI + GitHub API via Supabase proxy');
 
 export const analyzeProjectSuitability = async (
   resumeData: ResumeData,
@@ -197,25 +196,14 @@ const fetchRealGitHubProjects = async (jobDescription: string, role: string): Pr
   return fetchGitHubProjects(techSkills, role);
 };
 
-// Function to fetch real GitHub projects based on tech stack and role
+// Function to fetch real GitHub projects based on tech stack and role via proxy
 export const fetchGitHubProjects = async (techStack: string[], role: string): Promise<any[]> => {
   try {
     // Create search query based on tech stack and role
     const query = `${role} ${techStack.slice(0, 3).join(' ')}`;
     
-    const response = await fetch(`https://api.github.com/search/repositories?q=${encodeURIComponent(query)}&sort=stars&order=desc&per_page=10`, {
-      headers: {
-        'Authorization': `token ${GITHUB_TOKEN}`,
-        'Accept': 'application/vnd.github.v3+json'
-      }
-    });
-
-    if (!response.ok) {
-      console.warn(`GitHub API error: ${response.status}`);
-      throw new Error(`GitHub API error: ${response.status}`);
-    }
-
-    const data = await response.json();
+    // Use proxy instead of direct API call
+    const data = await github.searchRepos(query, { sort: 'stars', order: 'desc', perPage: 10 });
     
     if (!data.items || data.items.length === 0) {
       console.warn('No GitHub projects found for query:', query);

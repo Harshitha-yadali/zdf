@@ -16,10 +16,7 @@ import {
   Skill,
   Certification,
 } from '../types/resume';
-
-const EDENAI_API_KEY = import.meta.env.VITE_EDENAI_API_KEY || '';
-const EDENAI_OCR_ASYNC_URL = 'https://api.edenai.run/v2/ocr/ocr_async';
-const EDENAI_CHAT_URL = 'https://api.edenai.run/v2/text/chat';
+import { edenai } from './aiProxyService';
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -68,13 +65,9 @@ export class EnhancedResumeParserService {
    * Main parsing function with enhanced error handling and multi-layer extraction
    */
   static async parseResumeFromFile(file: File): Promise<EnhancedParseResult> {
-    console.log('🚀 Enhanced Resume Parser - P0 Enterprise Fixes');
+    console.log('🚀 Enhanced Resume Parser - P0 Enterprise Fixes (via Supabase proxy)');
     console.log('═══════════════════════════════════════════════════════════');
     console.log('📄 File:', file.name, '|', (file.size / 1024).toFixed(2), 'KB', '| Type:', file.type);
-
-    if (!EDENAI_API_KEY) {
-      throw new Error('EdenAI API key not configured. Please check your .env file.');
-    }
 
     // Step 1: Analyze file and determine extraction strategy
     const extractionStrategy = this.determineExtractionStrategy(file);
@@ -274,31 +267,10 @@ export class EnhancedResumeParserService {
     console.log('🔍 Enhanced OCR extraction...');
 
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('providers', 'mistral,google'); // Multi-provider for better reliability
-    formData.append('language', 'en');
-    formData.append('fallback_providers', 'amazon,microsoft'); // Additional fallbacks
-
+    // Use proxy service for OCR
     try {
-      const response = await fetch(EDENAI_OCR_ASYNC_URL, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${EDENAI_API_KEY}` },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error(`OCR API failed: ${response.status}`);
-      }
-
-      const result = await response.json();
-      
-      if (result.public_id) {
-        const ocrResult = await this.pollEnhancedOCRResult(result.public_id);
-        return this.extractBestTextFromOCRResult(ocrResult);
-      }
-
-      return this.extractBestTextFromOCRResult(result);
-      
+      const extractedText = await edenai.extractText(file);
+      return extractedText;
     } catch (error) {
       console.error('❌ Enhanced OCR failed:', error);
       throw error;
@@ -306,45 +278,11 @@ export class EnhancedResumeParserService {
   }
 
   /**
-   * Enhanced OCR result polling with better timeout handling
+   * Enhanced OCR result polling - now handled by proxy
    */
-  private static async pollEnhancedOCRResult(jobId: string): Promise<any> {
-    const pollUrl = `https://api.edenai.run/v2/ocr/ocr_async/${jobId}`;
-    const maxAttempts = 40; // Increased for complex documents
-    const baseDelay = 1500; // Reduced initial delay
-    
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      console.log(`🔍 Polling OCR result... (${attempt + 1}/${maxAttempts})`);
-      
-      try {
-        const response = await fetch(pollUrl, {
-          method: 'GET',
-          headers: { Authorization: `Bearer ${EDENAI_API_KEY}` },
-        });
-
-        if (!response.ok) {
-          await delay(baseDelay * Math.min(attempt + 1, 4)); // Exponential backoff, capped
-          continue;
-        }
-
-        const result = await response.json();
-        
-        if (result.status === 'finished') {
-          console.log('✅ OCR job completed successfully');
-          return result.results || result;
-        }
-        
-        if (result.status === 'failed') {
-          throw new Error('OCR job failed on server');
-        }
-        
-        // Progressive delay
-        await delay(baseDelay * Math.min(attempt + 1, 3));
-        
-      } catch (error) {
-        console.warn(`⚠️ Poll attempt ${attempt + 1} failed:`, error);
-        await delay(baseDelay);
-      }
+  private static async pollEnhancedOCRResult(_jobId: string): Promise<any> {
+    // Polling is now handled internally by the proxy service
+    return {};
     }
     
     throw new Error('OCR job timed out - document may be too complex');
@@ -710,41 +648,14 @@ Extract ACTUAL data from the resume. Do NOT use placeholder values.`;
   private static async callChatAPIWithRetry(prompt: string, retryCount = 0): Promise<ResumeData> {
     const MAX_RETRIES = 3;
     
-    const requestBody = {
-      providers: 'openai/gpt-4o-mini',
-      text: prompt,
-      chatbot_global_action: 'You are an expert resume parser. Extract real data from resumes with complex layouts. Return only valid JSON.',
-      previous_history: [],
-      temperature: 0.05, // Lower temperature for more consistent parsing
-      max_tokens: 4000,
-    };
-
     try {
-      const response = await fetch(EDENAI_CHAT_URL, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${EDENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
+      // Use proxy service for chat
+      const content = await edenai.chat(prompt, {
+        provider: 'openai/gpt-4o-mini',
+        temperature: 0.05,
+        maxTokens: 4000,
       });
 
-      if (!response.ok) {
-        if (retryCount < MAX_RETRIES) {
-          await delay(2000 * (retryCount + 1));
-          return this.callChatAPIWithRetry(prompt, retryCount + 1);
-        }
-        throw new Error(`Chat API failed: ${response.status}`);
-      }
-
-      const result = await response.json();
-      const providerResult = result?.['openai/gpt-4o-mini'] || result?.['openai__gpt_4o_mini'];
-      
-      if (!providerResult || providerResult.status === 'fail') {
-        throw new Error(providerResult?.error?.message || 'Provider failed');
-      }
-
-      const content = providerResult.generated_text || '';
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       
       if (!jsonMatch) {
