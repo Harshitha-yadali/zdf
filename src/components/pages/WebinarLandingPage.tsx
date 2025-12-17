@@ -281,6 +281,12 @@ export const WebinarLandingPage: React.FC<WebinarLandingPageProps> = ({ onShowAu
       throw new Error(`Payment order error: ${composed}`);
     }
 
+    // Check if orderData contains an error (edge function returned 200 but with error in body)
+    if (orderData?.error) {
+      console.error('Order returned error:', orderData.error);
+      throw new Error(`Payment order error: ${orderData.error}`);
+    }
+
     if (!orderData || !orderData.orderId) {
       console.error('Invalid order data received:', orderData);
       throw new Error('Failed to create payment order - no order ID received');
@@ -289,7 +295,8 @@ export const WebinarLandingPage: React.FC<WebinarLandingPageProps> = ({ onShowAu
     // Step 4: Get Razorpay key from edge function response (secure - from Supabase secrets)
     const razorpayKey = orderData.keyId;
     if (!razorpayKey) {
-      throw new Error('Razorpay key not configured');
+      console.error('Missing keyId in order response:', orderData);
+      throw new Error('Razorpay key not configured - edge function did not return keyId');
     }
 
     // Step 5: Initialize Razorpay payment
