@@ -17,7 +17,7 @@ export interface ExportOptions {
 export const defaultExportOptions: ExportOptions = {
   layoutType: 'standard',
   paperSize: 'a4',
-  fontFamily: 'Times New Roman',
+  fontFamily: 'Calibri',
   nameSize: 22,
   sectionHeaderSize: 13,
   subHeaderSize: 11,

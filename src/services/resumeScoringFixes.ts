@@ -37,7 +37,6 @@ export const SKILL_SYNONYMS: Record<string, string[]> = {
   'fastapi': ['fast api', 'fastapi python'],
   'pandas': ['pandas python', 'data analysis python', 'dataframes'],
   'numpy': ['numpy python', 'numerical python', 'np'],
-};
 
   // Databases
   'sql': ['mysql', 'postgresql', 'postgres', 'database queries', 'sql server', 'oracle sql', 'sqlite'],

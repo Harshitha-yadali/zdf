@@ -108,8 +108,8 @@ export const GamingAptitudePage: React.FC<GamingAptitudePageProps> = ({
             Gaming Aptitude Center
           </h1>
           <p className="text-lg text-slate-400 max-w-2xl mx-auto">
-            Test your problem-solving skills with Path Finder challenges designed for top consulting firms.
-            Complete levels, earn scores, and climb the leaderboards!
+            Test your cognitive abilities with assessment games designed for top consulting firms.
+            Complete challenges, earn scores, and climb the leaderboards!
           </p>
         </motion.div>
 
@@ -158,7 +158,7 @@ export const GamingAptitudePage: React.FC<GamingAptitudePageProps> = ({
         )}
 
         {/* Game Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -234,6 +234,44 @@ export const GamingAptitudePage: React.FC<GamingAptitudePageProps> = ({
               </div>
             </div>
           </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            <div className="bg-gradient-to-br from-indigo-500 to-cyan-600 rounded-2xl p-6 h-full">
+              <div className="flex flex-col h-full">
+                <div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <Brain className="w-10 h-10 text-white" />
+                    <Target className="w-8 h-8 text-yellow-300" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-white mb-2">Spatial Reasoning</h2>
+                  <p className="text-indigo-100 mb-4 text-sm">
+                    Test your visual-spatial intelligence with pathfinding puzzles. Rotate tiles and toggle arrows to create a path from spaceship to planet. 3 questions with progressive difficulty!
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <span className="flex items-center gap-1 bg-white/20 px-3 py-1 rounded-full text-white text-xs">
+                      <Brain className="w-3 h-3" /> Spatial Intelligence
+                    </span>
+                    <span className="flex items-center gap-1 bg-white/20 px-3 py-1 rounded-full text-white text-xs">
+                      <Target className="w-3 h-3" /> 3 Questions
+                    </span>
+                    <span className="flex items-center gap-1 bg-white/20 px-3 py-1 rounded-full text-white text-xs">
+                      <Trophy className="w-3 h-3" /> Efficiency Scoring
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigate('/spatial-reasoning')}
+                  className="mt-auto w-full px-6 py-3 bg-white text-indigo-600 font-semibold rounded-lg hover:bg-indigo-50 transition-colors shadow-lg"
+                >
+                  Play Spatial Reasoning
+                </button>
+              </div>
+            </div>
+          </motion.div>
         </div>
 
         {/* How It Works */}
@@ -265,7 +303,7 @@ export const GamingAptitudePage: React.FC<GamingAptitudePageProps> = ({
               </div>
               <h3 className="text-base font-semibold text-white mb-2">Solve the Puzzle</h3>
               <p className="text-slate-400 text-sm">
-                Navigate from start to end, collecting keys and avoiding obstacles within the time limit.
+                Complete various challenges: math calculations, spatial puzzles, memory tasks, and pathfinding within time limits.
               </p>
             </div>
 

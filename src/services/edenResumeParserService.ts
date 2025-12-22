@@ -19,6 +19,9 @@ export interface ParsedResume extends ResumeData {
   rawEdenResponse?: any;
 }
 
+// Maximum characters to store for parsedText (matches optimizer limit)
+const MAX_PARSED_TEXT_LENGTH = 45000; // Leave room for JD
+
 /**
  * Main function: Parse resume using Mistral OCR + openai/gpt-4o-mini
  * Flow: Mistral OCR (via Edge Function) → Chat API parsing (via Edge Function)
@@ -138,6 +141,10 @@ IMPORTANT: Extract ACTUAL data from the resume text. Do NOT use placeholder valu
  * Map parsed JSON to our resume format
  */
 const mapToResume = (parsed: any, rawText: string, rawResult: any): ParsedResume => {
+  // Truncate raw text to prevent exceeding optimizer limits
+  const truncatedText = rawText.length > MAX_PARSED_TEXT_LENGTH 
+    ? rawText.substring(0, MAX_PARSED_TEXT_LENGTH) + '... [truncated]'
+    : rawText;
   const education: Education[] = (parsed.education || []).map((e: any) => ({
     degree: e.degree || '',
     school: e.school || '',
@@ -184,7 +191,7 @@ const mapToResume = (parsed: any, rawText: string, rawResult: any): ParsedResume
     projects,
     skills,
     certifications,
-    parsedText: rawText,
+    parsedText: truncatedText,
     parsingConfidence: 0.95,
     rawEdenResponse: rawResult,
     origin: 'eden_parsed',

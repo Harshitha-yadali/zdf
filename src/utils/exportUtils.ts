@@ -313,35 +313,55 @@ function renderCertificationsForPDF2(state: PageState, certifications: (string |
   let totalHeight = drawSectionTitle(state, 'Certifications', PDF_CONFIG);
 
   filtered.forEach((cert) => {
-    if (!checkPageSpace(state, 10, PDF_CONFIG)) addNewPage(state, PDF_CONFIG);
+    if (!checkPageSpace(state, 15, PDF_CONFIG)) addNewPage(state, PDF_CONFIG);
 
     if (typeof cert === 'object' && cert !== null) {
       const anyC: any = cert;
-      const primary = toPlainText(anyC) || toPlainText(anyC.title) || toPlainText(anyC.description);
+      const title = toPlainText(anyC.title) || toPlainText(anyC);
       const desc = toPlainText(anyC?.description);
-      const titleHeight = drawText(
-        state,
-        `- ${primary}`,
-        PDF_CONFIG.margins.left + PDF_CONFIG.spacing.bulletIndent,
-        PDF_CONFIG,
-        {
-          maxWidth: PDF_CONFIG.contentWidth - PDF_CONFIG.spacing.bulletIndent
-        }
-      );
-      totalHeight += titleHeight;
-
-      if (desc && desc !== primary) {
-        state.currentY += 1;
+      
+      // Draw title in bold if we have both title and description
+      if (title && desc && desc !== title) {
+        const titleHeight = drawText(
+          state,
+          `- ${title}`,
+          PDF_CONFIG.margins.left + PDF_CONFIG.spacing.bulletIndent,
+          PDF_CONFIG,
+          {
+            fontSize: PDF_CONFIG.fonts.body.size,
+            fontWeight: 'bold',
+            maxWidth: PDF_CONFIG.contentWidth - PDF_CONFIG.spacing.bulletIndent
+          }
+        );
+        totalHeight += titleHeight;
+        state.currentY += 2; // Small spacing between title and description
+        
+        // Draw description in smaller, indented text
         const descHeight = drawText(
           state,
           desc,
-          PDF_CONFIG.margins.left + PDF_CONFIG.spacing.bulletIndent * 2,
+          PDF_CONFIG.margins.left + PDF_CONFIG.spacing.bulletIndent * 1.5,
           PDF_CONFIG,
           {
-            maxWidth: PDF_CONFIG.contentWidth - (PDF_CONFIG.spacing.bulletIndent * 2)
+            fontSize: PDF_CONFIG.fonts.body.size - 1, // Slightly smaller font
+            maxWidth: PDF_CONFIG.contentWidth - (PDF_CONFIG.spacing.bulletIndent * 1.5)
           }
         );
-        totalHeight += descHeight + 1;
+        totalHeight += descHeight + 2;
+      } else {
+        // Single line format for title-only or description-only
+        const primary = title || desc;
+        const titleHeight = drawText(
+          state,
+          `- ${primary}`,
+          PDF_CONFIG.margins.left + PDF_CONFIG.spacing.bulletIndent,
+          PDF_CONFIG,
+          {
+            fontSize: PDF_CONFIG.fonts.body.size,
+            maxWidth: PDF_CONFIG.contentWidth - PDF_CONFIG.spacing.bulletIndent
+          }
+        );
+        totalHeight += titleHeight;
       }
     } else {
       const bulletText = `- ${toPlainText(cert)}`;
@@ -937,7 +957,7 @@ function drawAchievementsAndExtras(state: PageState, resumeData: ResumeData, PDF
 
   let totalHeight = drawSectionTitle(state, 'Achievements', PDF_CONFIG);
 
-  resumeData.achievements.forEach(item => {
+  resumeData.achievements!.forEach(item => {
     if (!checkPageSpace(state, 10, PDF_CONFIG)) {
       addNewPage(state, PDF_CONFIG);
     }
@@ -1294,12 +1314,22 @@ const generateWordHTMLContent = (data: ResumeData, userType: UserType = 'experie
           if (typeof cert === 'object' && cert !== null) {
             const title = toPlainText(cert.title) || toPlainText(cert);
             const description = toPlainText(cert.description);
-            const primary = title || description;
-            certText = title ? `<b style="font-weight: bold;">${title}</b>${description && description !== title ? ` - ${description}` : ''}` : primary;
+            
+            if (title && description && description !== title) {
+              // Format with title on one line and description indented below
+              certText = `
+                <div style="font-weight: bold; margin-bottom: 2pt;">${title}</div>
+                <div style="font-size: 8.5pt; color: #4a5568; margin-left: 3mm; line-height: 1.3;">${description}</div>
+              `;
+            } else {
+              // Single line format
+              const primary = title || description;
+              certText = primary;
+            }
           } else {
             certText = String(cert);
           }
-          return `<li class="bullet" style="font-size: 9.5pt; line-height: 1.4; margin: 0 0 2pt 0; font-family: Calibri, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${certText}</li>`;
+          return `<li class="bullet" style="font-size: 9.5pt; line-height: 1.4; margin: 0 0 4pt 0; font-family: Calibri, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">${certText}</li>`;
         }).join('')}
       </ul>
     </div>

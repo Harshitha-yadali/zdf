@@ -598,16 +598,26 @@ export const ResumePreview: React.FC<ResumePreviewProps> = ({
               const primary = titleEff || descEff;
               return (
                 <li key={index} style={listItemStyle}>
-                  <span>
-                    {titleEff ? (
-                      <>
+                  <div>
+                    {titleEff && (
+                      <div style={{ fontWeight: 'bold', marginBottom: mmToPx(1) }}>
                         {titleEff}
-                        {descEff && descEff !== titleEff ? `: ${descEff}` : ''}
-                      </>
-                    ) : (
-                      <>{primary}</>
+                      </div>
                     )}
-                  </span>
+                    {descEff && descEff !== titleEff && (
+                      <div style={{ 
+                        fontSize: '10px', 
+                        lineHeight: '1.4',
+                        color: '#4a5568',
+                        marginLeft: mmToPx(2)
+                      }}>
+                        {descEff}
+                      </div>
+                    )}
+                    {!titleEff && primary && (
+                      <div>{primary}</div>
+                    )}
+                  </div>
                 </li>
               );
             } else if (typeof cert === 'object') {

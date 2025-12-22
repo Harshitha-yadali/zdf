@@ -1,6 +1,6 @@
 // src/App.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { Menu, X, Home, Info, BookOpen, Phone, FileText, LogIn, LogOut, User, Wallet, Briefcase, Crown, Sparkles, Gamepad2, Mail } from 'lucide-react';
+import { Menu, X, Home, Info, BookOpen, Phone, FileText, LogIn, LogOut, User, Wallet, Briefcase, Crown, Sparkles, Gamepad2, Mail, Brain } from 'lucide-react';
 import { useAuth } from './contexts/AuthContext';
 import { Header } from './components/Header';
 import { Navigation } from './components/navigation/Navigation';
@@ -60,6 +60,7 @@ import { AccenturePathFinderPage } from './components/pages/AccenturePathFinderP
 import { CognitivePathFinderPage } from './components/pages/CognitivePathFinderPage';
 import { KeyFinderPage } from './components/pages/KeyFinderPage';
 import { BubbleSelectionPage } from './components/pages/BubbleSelectionPage';
+import { SpatialReasoningDemoPage } from './pages/SpatialReasoningDemoPage';
 import { ResetPasswordPage } from './components/pages/ResetPasswordPage';
 import { SnowEffect, SantaSleigh } from './components/ui/ChristmasTheme';
 import { PageSidebar } from './components/navigation/PageSidebar';
@@ -535,6 +536,7 @@ const handleDiwaliCTAClick = useCallback(() => {
           <Route path="/cognitive-pathfinder" element={<CognitivePathFinderPage />} />
           <Route path="/key-finder" element={<KeyFinderPage />} />
           <Route path="/bubble-selection" element={<BubbleSelectionPage />} />
+          <Route path="/spatial-reasoning" element={<SpatialReasoningDemoPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route
             path="/admin/jobs"
@@ -650,7 +652,8 @@ const handleDiwaliCTAClick = useCallback(() => {
                       { id: '/blog', label: 'Blog', icon: <BookOpen className="w-5 h-5" /> },
                       { id: '/webinars', label: 'Webinars', icon: <Sparkles className="w-5 h-5" /> },
                       ...(isAuthenticated ? [{ id: '/my-webinars', label: 'My Webinars', icon: <Sparkles className="w-5 h-5" /> }] : []),
-             { id: 'gaming', label: 'Gaming', icon: <Gamepad2 className="w-5 h-5" /> },
+             { id: '/gaming', label: 'Gaming', icon: <Gamepad2 className="w-5 h-5" /> },
+                      { id: '/spatial-reasoning', label: 'Spatial Reasoning', icon: <Brain className="w-5 h-5" /> },
                       { id: '/careers', label: 'Careers', icon: <Briefcase className="w-5 h-5" /> },
                       { id: '/jobs', label: 'Latest Jobs', icon: <Briefcase className="w-5 h-5" /> },
                     ...((user?.role === 'admin' || user?.email === 'primoboostai@gmail.com') ? [{ id: '/admin/jobs', label: 'Admin Panel', icon: <Crown className="w-5 h-5" /> }] : []),
