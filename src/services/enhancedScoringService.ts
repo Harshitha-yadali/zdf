@@ -727,18 +727,19 @@ export class EnhancedScoringService {
     if (resumeData?.skills && resumeData.skills.length > 0) confidenceScore += 0.8;
     if (jobDescription && jobDescription.length > 200) confidenceScore += 0.8;
 
-    // Score quality factors (70% weight) - Increased importance, more strict
+    // Score quality factors (70% weight) - FIX: Excellent scores should guarantee High confidence
     if (finalScore !== undefined) {
-      if (finalScore >= 85) confidenceScore += 3.0; // Only excellent scores get high confidence boost
-      else if (finalScore >= 75) confidenceScore += 2.0; // Good scores get moderate boost
-      else if (finalScore >= 65) confidenceScore += 1.0; // Fair scores get small boost
-      else if (finalScore >= 55) confidenceScore += 0.3; // Below average gets minimal boost
+      // FIX: Scores 85+ automatically get High confidence regardless of other factors
+      if (finalScore >= 85) return 'High'; // Excellent scores automatically get High confidence
+      else if (finalScore >= 75) confidenceScore += 2.5; // Good scores get strong boost
+      else if (finalScore >= 65) confidenceScore += 1.5; // Fair scores get moderate boost
+      else if (finalScore >= 55) confidenceScore += 0.5; // Below average gets small boost
       // Poor scores (< 55) don't add confidence
     }
 
-    // More strict thresholds - score quality matters more
-    if (confidenceScore >= 6.5) return 'High';    // Need excellent data AND good score (75+)
-    if (confidenceScore >= 5.0) return 'Medium';  // Need decent data AND fair score (65+)
+    // Adjusted thresholds - less strict for good scores
+    if (confidenceScore >= 5.5) return 'High';    // Good data with decent score (75+)
+    if (confidenceScore >= 4.0) return 'Medium';  // Decent data with fair score (65+)
     return 'Low';
   }
 

@@ -348,6 +348,9 @@ export function calculateAlignedConfidence(
   inputQuality: InputQualityAssessment,
   hasJD: boolean
 ): ConfidenceLevel {
+  // FIX: Excellent scores (85+) should automatically get High confidence
+  if (score >= 85) return 'High';
+  
   // Base confidence from input quality
   let confidencePoints = 0;
   
@@ -362,11 +365,11 @@ export function calculateAlignedConfidence(
   
   // Score quality contribution (0-4 points)
   // CRITICAL: High scores should have high confidence, low scores should have low confidence
-  if (score >= 80) confidencePoints += 4;
-  else if (score >= 70) confidencePoints += 3;
-  else if (score >= 60) confidencePoints += 2;
-  else if (score >= 50) confidencePoints += 1;
-  // Scores below 50 don't add confidence
+  if (score >= 75) confidencePoints += 4; // Good scores get full points
+  else if (score >= 65) confidencePoints += 3;
+  else if (score >= 55) confidencePoints += 2;
+  else if (score >= 45) confidencePoints += 1;
+  // Scores below 45 don't add confidence
   
   // JD presence bonus (0-1 point)
   if (hasJD) confidencePoints += 1;
@@ -382,10 +385,10 @@ export function calculateAlignedConfidence(
   
   if (sectionsPresent >= 4) confidencePoints += 1;
   
-  // Map to confidence level
+  // Map to confidence level - Adjusted thresholds
   // Max points: 10 (4 quality + 4 score + 1 JD + 1 completeness)
-  if (confidencePoints >= 8) return 'High';
-  if (confidencePoints >= 5) return 'Medium';
+  if (confidencePoints >= 7) return 'High';   // Lowered from 8
+  if (confidencePoints >= 4) return 'Medium'; // Lowered from 5
   return 'Low';
 }
 
