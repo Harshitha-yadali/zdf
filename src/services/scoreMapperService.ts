@@ -37,16 +37,17 @@ export class ScoreMapperService {
   /**
    * Get the match band for a given score (0-100)
    * Maps to 9 bands from "Excellent Match" to "Minimal Match"
+   * FIXED: Market-aligned thresholds for realistic scoring
    */
   static getMatchBand(score: number): MatchBand {
-    if (score >= 85) return 'Excellent Match';
-    if (score >= 75) return 'Very Good Match';
-    if (score >= 65) return 'Good Match';
-    if (score >= 55) return 'Fair Match';
-    if (score >= 45) return 'Below Average';
-    if (score >= 35) return 'Poor Match';
-    if (score >= 25) return 'Very Poor';
-    if (score >= 15) return 'Inadequate';
+    if (score >= 90) return 'Excellent Match';
+    if (score >= 80) return 'Very Good Match';
+    if (score >= 70) return 'Good Match';
+    if (score >= 60) return 'Fair Match';
+    if (score >= 50) return 'Below Average';
+    if (score >= 40) return 'Poor Match';
+    if (score >= 30) return 'Very Poor';
+    if (score >= 20) return 'Inadequate';
     return 'Minimal Match';
   }
 

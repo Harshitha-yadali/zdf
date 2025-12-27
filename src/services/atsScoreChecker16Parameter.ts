@@ -413,27 +413,28 @@ export class ATSScoreChecker16Parameter {
   
   /**
    * Determine match quality based on overall score
+   * Market-aligned thresholds
    */
   private static getMatchQuality(score: number): 'Excellent' | 'Good' | 'Adequate' | 'Poor' | 'Inadequate' {
     if (score >= 85) return 'Excellent';
     if (score >= 70) return 'Good';
-    if (score >= 55) return 'Adequate';
-    if (score >= 35) return 'Poor';
+    if (score >= 50) return 'Adequate';
+    if (score >= 30) return 'Poor';
     return 'Inadequate';
   }
   
   /**
    * Determine shortlist/interview chance based on overall score
    * Higher scores = higher chances of getting shortlisted
+   * FIXED: More realistic probabilities for domain mismatches
    */
   private static getInterviewChance(score: number): '1-2%' | '5-12%' | '20-30%' | '40-60%' | '70-80%' | '80-90%' | '90%+' {
-    // For high scores (90+), show very high shortlist chances
     if (score >= 95) return '90%+';
     if (score >= 90) return '80-90%';
-    if (score >= 85) return '70-80%';
-    if (score >= 75) return '40-60%';
-    if (score >= 60) return '20-30%';
-    if (score >= 40) return '5-12%';
+    if (score >= 80) return '70-80%';
+    if (score >= 70) return '40-60%';
+    if (score >= 55) return '20-30%';
+    if (score >= 35) return '5-12%';
     return '1-2%';
   }
   
@@ -569,6 +570,7 @@ export class ATSScoreChecker16Parameter {
   
   /**
    * Calculate experience relevance with intelligent analysis
+   * FIXED: Stronger penalty for domain mismatches
    */
   private static calculateExperienceRelevance(
     enhancedScore: EnhancedComprehensiveScore,
@@ -579,16 +581,27 @@ export class ATSScoreChecker16Parameter {
     // Start with enhanced score
     let score = Math.round((enhancedScore.tier_scores.experience.percentage / 100) * maxScore);
     
-    // FIXED: Removed artificial score floors that were inflating mismatched resume scores
-    // Only apply minimal boost if there's actual relevant experience
-    if (enhancedScore.critical_metrics.experience_relevance.score > 1) {
-      // Only boost if experience relevance is significant (score > 1)
-      score = Math.max(score, 2);
-    }
-    
-    // FIXED: Reduced JD-based boost - only apply if keyword match is strong (>50%)
-    if (jobDescription && enhancedScore.critical_metrics.jd_keywords_match.percentage > 50) {
-      score = Math.max(score, Math.round(maxScore * 0.3)); // Reduced from 40% to 30%
+    // FIXED: Domain mismatch detection based on JD keyword match
+    if (jobDescription) {
+      const jdMatchPercentage = enhancedScore.critical_metrics.jd_keywords_match.percentage;
+      const expRelevancePercentage = enhancedScore.critical_metrics.experience_relevance.percentage;
+      
+      // If both JD match and experience relevance are low, this is a domain mismatch
+      if (jdMatchPercentage < 25 && expRelevancePercentage < 30) {
+        // Strong domain mismatch - cap score at 3 (20% of max)
+        score = Math.min(score, 3);
+      } else if (jdMatchPercentage < 40 && expRelevancePercentage < 50) {
+        // Moderate domain mismatch - cap score at 6 (40% of max)
+        score = Math.min(score, 6);
+      } else if (enhancedScore.critical_metrics.experience_relevance.score > 1) {
+        // Only boost if experience relevance is significant
+        score = Math.max(score, 2);
+      }
+    } else {
+      // Normal mode - only apply minimal boost if there's actual relevant experience
+      if (enhancedScore.critical_metrics.experience_relevance.score > 1) {
+        score = Math.max(score, 2);
+      }
     }
     
     return Math.min(score, maxScore);
@@ -664,6 +677,7 @@ export class ATSScoreChecker16Parameter {
   
   /**
    * Calculate keyword match score with JD awareness
+   * FIXED: Stronger penalty for domain mismatches
    */
   private static calculateKeywordMatch(
     enhancedScore: EnhancedComprehensiveScore,
@@ -676,23 +690,27 @@ export class ATSScoreChecker16Parameter {
     
     // If JD-based scoring, prioritize JD keyword match
     if (jobDescription) {
-      const jdMatchScore = Math.round((enhancedScore.critical_metrics.jd_keywords_match.percentage / 100) * maxScore);
-      score = Math.max(score, jdMatchScore);
+      const jdMatchPercentage = enhancedScore.critical_metrics.jd_keywords_match.percentage;
+      const jdMatchScore = Math.round((jdMatchPercentage / 100) * maxScore);
       
-      // FIXED: Only apply minimum if JD keyword match is significant (>20%)
-      if (enhancedScore.critical_metrics.jd_keywords_match.percentage > 20) {
-        score = Math.max(score, 3); // Reduced from 5 to 3
+      // FIXED: Domain mismatch detection - if JD match is very low (<20%), apply heavy penalty
+      if (jdMatchPercentage < 20) {
+        // Domain mismatch - cap score at 5 (20% of max)
+        score = Math.min(score, 5);
+      } else if (jdMatchPercentage < 40) {
+        // Weak match - cap score at 10 (40% of max)
+        score = Math.min(score, 10);
+      } else {
+        score = Math.max(score, jdMatchScore);
       }
     }
-    
-    // FIXED: Removed artificial minimum for any skills detected
-    // Let the actual percentage drive the score
     
     return Math.min(score, maxScore);
   }
   
   /**
    * Calculate skills alignment score with technical focus
+   * FIXED: Stronger penalty for domain mismatches
    */
   private static calculateSkillsAlignment(
     enhancedScore: EnhancedComprehensiveScore,
@@ -704,16 +722,21 @@ export class ATSScoreChecker16Parameter {
     let score = Math.round((enhancedScore.tier_scores.skills_keywords.percentage / 100) * maxScore);
     
     // Boost based on technical skills alignment
-    const techScore = Math.round((enhancedScore.critical_metrics.technical_skills_alignment.percentage / 100) * maxScore);
-    score = Math.max(score, techScore);
+    const techPercentage = enhancedScore.critical_metrics.technical_skills_alignment.percentage;
+    const techScore = Math.round((techPercentage / 100) * maxScore);
     
-    // FIXED: Only apply JD-based boost if alignment is strong (>50%)
-    if (jobDescription && enhancedScore.critical_metrics.technical_skills_alignment.percentage > 50) {
-      score = Math.max(score, Math.round(maxScore * 0.3)); // Reduced from 40% to 30%
+    // FIXED: Domain mismatch detection
+    if (jobDescription) {
+      if (techPercentage < 20) {
+        // Domain mismatch - cap score at 4 (20% of max)
+        score = Math.min(score, 4);
+      } else if (techPercentage < 40) {
+        // Weak match - cap score at 8 (40% of max)
+        score = Math.min(score, 8);
+      } else {
+        score = Math.max(score, techScore);
+      }
     }
-    
-    // FIXED: Removed artificial minimum for any tech skills detected
-    // Let the actual percentage drive the score
     
     return Math.min(score, maxScore);
   }

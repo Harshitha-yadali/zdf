@@ -788,29 +788,25 @@ export class EnhancedScoringService {
     jobDescription?: string,
     finalScore?: number
   ): ConfidenceLevel {
-    let confidenceScore = 0;
-
-    // Data completeness factors (30% weight) - Reduced from 40%
-    if (resumeText.length > 1000) confidenceScore += 0.8;
-    if (resumeText.length > 2000) confidenceScore += 0.8;
-    if (resumeData) confidenceScore += 0.8;
-    if (resumeData?.workExperience && resumeData.workExperience.length > 0) confidenceScore += 0.8;
-    if (resumeData?.skills && resumeData.skills.length > 0) confidenceScore += 0.8;
-    if (jobDescription && jobDescription.length > 200) confidenceScore += 0.8;
-
-    // Score quality factors (70% weight) - FIX: Excellent scores should guarantee High confidence
+    // FIX: Score-based confidence mapping (primary factor)
+    // Market expectation: High scores = High confidence
     if (finalScore !== undefined) {
-      // FIX: Scores 85+ automatically get High confidence regardless of other factors
-      if (finalScore >= 85) return 'High'; // Excellent scores automatically get High confidence
-      else if (finalScore >= 75) confidenceScore += 2.5; // Good scores get strong boost
-      else if (finalScore >= 65) confidenceScore += 1.5; // Fair scores get moderate boost
-      else if (finalScore >= 55) confidenceScore += 0.5; // Below average gets small boost
-      // Poor scores (< 55) don't add confidence
+      if (finalScore >= 75) return 'High';   // Good scores get High confidence
+      if (finalScore >= 60) return 'Medium'; // Fair scores get Medium confidence
+      return 'Low';                          // Below average gets Low confidence
     }
+    
+    // Fallback: Data completeness factors (if no score provided)
+    let confidenceScore = 0;
+    if (resumeText.length > 1000) confidenceScore += 1;
+    if (resumeText.length > 2000) confidenceScore += 1;
+    if (resumeData) confidenceScore += 1;
+    if (resumeData?.workExperience && resumeData.workExperience.length > 0) confidenceScore += 1;
+    if (resumeData?.skills && resumeData.skills.length > 0) confidenceScore += 1;
+    if (jobDescription && jobDescription.length > 200) confidenceScore += 1;
 
-    // Adjusted thresholds - less strict for good scores
-    if (confidenceScore >= 5.5) return 'High';    // Good data with decent score (75+)
-    if (confidenceScore >= 4.0) return 'Medium';  // Decent data with fair score (65+)
+    if (confidenceScore >= 5) return 'High';
+    if (confidenceScore >= 3) return 'Medium';
     return 'Low';
   }
 

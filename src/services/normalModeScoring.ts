@@ -348,83 +348,57 @@ export function calculateAdjustedScore(
 /**
  * Calculate confidence level aligned with score bands
  * CRITICAL FIX: Confidence should match score quality
+ * 
+ * Confidence Mapping (Market Standard):
+ * - 90+ → Very High
+ * - 75-89 → High  
+ * - 60-74 → Medium
+ * - 40-59 → Low
+ * - 0-39 → Very Low
  */
 export function calculateAlignedConfidence(
   score: number,
   inputQuality: InputQualityAssessment,
   hasJD: boolean
 ): ConfidenceLevel {
-  // FIX: Excellent scores (85+) should automatically get High confidence
-  if (score >= 85) return 'High';
-  
-  // Base confidence from input quality
-  let confidencePoints = 0;
-  
-  // Input quality contribution (0-4 points)
-  switch (inputQuality.quality) {
-    case 'excellent': confidencePoints += 4; break;
-    case 'good': confidencePoints += 3; break;
-    case 'fair': confidencePoints += 2; break;
-    case 'poor': confidencePoints += 1; break;
-    case 'invalid': confidencePoints += 0; break;
-  }
-  
-  // Score quality contribution (0-4 points)
-  // CRITICAL: High scores should have high confidence, low scores should have low confidence
-  if (score >= 75) confidencePoints += 4; // Good scores get full points
-  else if (score >= 65) confidencePoints += 3;
-  else if (score >= 55) confidencePoints += 2;
-  else if (score >= 45) confidencePoints += 1;
-  // Scores below 45 don't add confidence
-  
-  // JD presence bonus (0-1 point)
-  if (hasJD) confidencePoints += 1;
-  
-  // Content completeness bonus (0-1 point)
-  const { contentMetrics } = inputQuality;
-  const sectionsPresent = [
-    contentMetrics.hasContactInfo,
-    contentMetrics.hasSkills,
-    contentMetrics.hasEducation,
-    contentMetrics.hasExperience || contentMetrics.hasProjects,
-  ].filter(Boolean).length;
-  
-  if (sectionsPresent >= 4) confidencePoints += 1;
-  
-  // Map to confidence level - Adjusted thresholds
-  // Max points: 10 (4 quality + 4 score + 1 JD + 1 completeness)
-  if (confidencePoints >= 7) return 'High';   // Lowered from 8
-  if (confidencePoints >= 4) return 'Medium'; // Lowered from 5
-  return 'Low';
+  // FIX: Score-based confidence mapping (primary factor)
+  // High scores MUST have high confidence - this is the market expectation
+  if (score >= 90) return 'High';   // Very High → High (our system uses 3 levels)
+  if (score >= 75) return 'High';   // High confidence for good scores
+  if (score >= 60) return 'Medium'; // Medium confidence for fair scores
+  if (score >= 40) return 'Low';    // Low confidence for below average
+  return 'Low';                     // Very Low → Low for poor scores
 }
 
 /**
  * Get match band description aligned with score
+ * Market-aligned thresholds for realistic scoring
  */
 export function getAlignedMatchBand(score: number): MatchBand {
-  if (score >= 85) return 'Excellent Match';
-  if (score >= 75) return 'Very Good Match';
-  if (score >= 65) return 'Good Match';
-  if (score >= 55) return 'Fair Match';
-  if (score >= 45) return 'Below Average';
-  if (score >= 35) return 'Poor Match';
-  if (score >= 25) return 'Very Poor';
-  if (score >= 15) return 'Inadequate';
+  if (score >= 90) return 'Excellent Match';
+  if (score >= 80) return 'Very Good Match';
+  if (score >= 70) return 'Good Match';
+  if (score >= 60) return 'Fair Match';
+  if (score >= 50) return 'Below Average';
+  if (score >= 40) return 'Poor Match';
+  if (score >= 30) return 'Very Poor';
+  if (score >= 20) return 'Inadequate';
   return 'Minimal Match';
 }
 
 /**
  * Get interview probability aligned with score
+ * Realistic probabilities based on market research
  */
 export function getAlignedInterviewProbability(score: number): string {
-  if (score >= 85) return '70-85%';
-  if (score >= 75) return '55-70%';
-  if (score >= 65) return '40-55%';
-  if (score >= 55) return '25-40%';
-  if (score >= 45) return '15-25%';
-  if (score >= 35) return '8-15%';
-  if (score >= 25) return '3-8%';
-  if (score >= 15) return '1-3%';
+  if (score >= 90) return '75-90%';
+  if (score >= 80) return '60-75%';
+  if (score >= 70) return '45-60%';
+  if (score >= 60) return '30-45%';
+  if (score >= 50) return '15-30%';
+  if (score >= 40) return '8-15%';
+  if (score >= 30) return '3-8%';
+  if (score >= 20) return '1-3%';
   return '0-1%';
 }
 
