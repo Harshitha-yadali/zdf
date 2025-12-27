@@ -94,16 +94,34 @@ export class ScoreMapperService {
 
   /**
    * Calculate weighted score from tier scores
-   * Uses TIER_WEIGHTS configuration (red_flags excluded as it's penalty-based)
+   * FIXED: Uses the weight stored in each tier score (dynamically adjusted for candidate level)
+   * instead of static TIER_WEIGHTS configuration
    */
   static calculateWeightedScore(tierScores: TierScores): TierWeightedResult {
     const tierContributions: Record<keyof TierScores, number> = {} as Record<keyof TierScores, number>;
     let weightedScore = 0;
+    let totalWeight = 0;
 
     // Calculate contribution from each tier (excluding red_flags which is penalty-based)
     for (const [tierKey, tierScore] of Object.entries(tierScores)) {
       const key = tierKey as keyof TierScores;
-      const weight = TIER_WEIGHTS[key];
+      
+      // Skip red_flags as it's penalty-based, not weighted
+      if (key === 'red_flags') {
+        tierContributions[key] = 0;
+        continue;
+      }
+      
+      // CRITICAL FIX: Use the weight from the tier score itself (dynamically adjusted)
+      // instead of the static TIER_WEIGHTS configuration
+      const weight = tierScore?.weight ?? TIER_WEIGHTS[key] ?? 0;
+      
+      // Validate tier score has required properties
+      if (!tierScore || typeof tierScore.percentage !== 'number') {
+        console.warn(`[ScoreMapperService] Invalid tier score for ${key}:`, tierScore);
+        tierContributions[key] = 0;
+        continue;
+      }
 
       // Calculate tier's weighted contribution
       const tierPercentage = tierScore.percentage;
@@ -111,7 +129,15 @@ export class ScoreMapperService {
 
       tierContributions[key] = contribution;
       weightedScore += contribution;
+      totalWeight += weight;
     }
+
+    // Log for debugging
+    console.log('[ScoreMapperService] Weighted Score Calculation:', {
+      weightedScore: Math.round(weightedScore * 100) / 100,
+      totalWeight,
+      tierContributions
+    });
 
     return {
       weightedScore: Math.round(weightedScore * 100) / 100,

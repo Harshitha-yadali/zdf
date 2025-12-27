@@ -472,7 +472,7 @@ export class EnhancedScoringService {
       trimmed: false,
       job_title: resumeData?.targetRole,
       breakdown: this.buildAdaptiveBreakdown(tierScores, resumeData, jobDescription),
-      missing_keywords: skillsKeywordsResult.missingKeywords.map(k => k.keyword),
+      missing_keywords: skillsKeywordsResult.missingKeywords.map((k: any) => k.keyword),
       actions: this.generateActions(tierScores, redFlagResult.redFlags, skillsKeywordsResult.missingKeywords),
       example_rewrites: this.generateExampleRewrites(resumeData),
       notes: this.generateNotes(tierScores, { autoRejectRisk: redFlagResult.autoRejectRisk }),
@@ -1519,19 +1519,25 @@ export class EnhancedScoringService {
 
   /**
    * Create a fallback tier result when an analyzer fails
+   * CRITICAL FIX: Don't give 50% fallback - give a low score to indicate failure
+   * This prevents the static ~54 score issue
    */
   private static createFallbackTierResult(tierName: string, tierNumber: number, maxScore: number): any {
+    // FIXED: Give a low score (20%) instead of 50% to indicate analyzer failure
+    // This ensures failed analyzers don't artificially inflate the score
+    const fallbackPercentage = 20; // Low score for failed analysis
+    
     const tierScore: TierScore = {
       tier_number: tierNumber,
       tier_name: tierName,
-      score: maxScore * 0.5, // Give 50% score as fallback
+      score: maxScore * (fallbackPercentage / 100),
       max_score: maxScore,
-      percentage: 50, // 50% as fallback
-      weight: 0, // Will be set later
+      percentage: fallbackPercentage, // FIXED: Low percentage instead of 50%
+      weight: 0, // Will be set later by weight normalization
       weighted_contribution: 0, // Will be calculated later
-      metrics_passed: Math.floor(maxScore * 0.5),
+      metrics_passed: Math.floor(maxScore * (fallbackPercentage / 100)),
       metrics_total: maxScore,
-      top_issues: [`${tierName} analysis failed - using fallback scoring`],
+      top_issues: [`${tierName} analysis incomplete - limited data available`],
     };
 
     // Return object with all possible properties that analyzers might have
@@ -1541,7 +1547,6 @@ export class EnhancedScoringService {
       missingKeywords: [],
       orderIssues: [],
       formatIssues: [],
-      // Add other common analyzer result properties as needed
     };
   }
 }
