@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Save, X, Upload, DollarSign, Tag, Building, User, Code, Brain, MessageCircle, Star, Clock, Target } from 'lucide-react';
 import { Question, Material, PaymentSettings } from '../types';
 import { supabaseStorage } from '../utils/supabaseStorage';
-import LoadingSpinner from '../components/LoadingSpinner';
 import { AdminApifyConfigManager } from '../components/admin/AdminApifyConfigManager';
 import { AdminJobSyncDashboard } from '../components/admin/AdminJobSyncDashboard';
 import { AdminJobUpdatesManager } from '../components/admin/AdminJobUpdatesManager';
@@ -458,7 +457,10 @@ const AdminPage: React.FC = () => {
   if (initialLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <LoadingSpinner message="Loading admin panel..." size="lg" />
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="text-gray-600">Loading admin panel...</p>
+        </div>
       </div>
     );
   }

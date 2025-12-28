@@ -97,6 +97,7 @@ export const Navigation: React.FC<NavigationProps> = ({ onPageChange }) => {
   ];
 
   const adminItems = [
+    { id: "/admin/dashboard", label: "Admin Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: "/admin/jobs", label: "Manage Jobs", icon: <Briefcase className="w-4 h-4" /> },
     { id: "/admin/blog", label: "Blog Management", icon: <FileText className="w-4 h-4" /> },
     { id: "/admin/email-testing", label: "Email Testing", icon: <Mail className="w-4 h-4" /> },

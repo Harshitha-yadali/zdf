@@ -58,6 +58,7 @@ import { GamingAptitudePage } from './components/pages/GamingAptitudePage';
 import { CompanyGamePage } from './components/pages/CompanyGamePage';
 import { AccenturePathFinderPage } from './components/pages/AccenturePathFinderPage';
 import { CognitivePathFinderPage } from './components/pages/CognitivePathFinderPage';
+import AdminPage from './pages/AdminPage';
 import { KeyFinderPage } from './components/pages/KeyFinderPage';
 import { BubbleSelectionPage } from './components/pages/BubbleSelectionPage';
 import { SpatialReasoningDemoPage } from './pages/SpatialReasoningDemoPage';
@@ -611,6 +612,14 @@ const handleDiwaliCTAClick = useCallback(() => {
             element={
               <AdminRoute>
                 <EmailTestingPanel />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <AdminRoute>
+                <AdminPage />
               </AdminRoute>
             }
           />
