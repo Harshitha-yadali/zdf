@@ -86,7 +86,17 @@ export class ApifyService {
     return data || [];
   }
 
-  async triggerManualSync(configId: string): Promise<{ success: boolean; message: string }> {
+  async triggerManualSync(configId: string): Promise<{
+    success: boolean;
+    message: string;
+    stats?: {
+      fetched: number;
+      created: number;
+      updated: number;
+      skipped: number;
+    };
+    platform?: string;
+  }> {
     try {
       const config = await this.getConfigById(configId);
       if (!config) {
@@ -102,6 +112,24 @@ export class ApifyService {
       });
 
       if (error) throw error;
+
+      const result = data?.results?.[0];
+      if (result?.success && result?.stats) {
+        return {
+          success: true,
+          message: `Sync completed: ${result.stats.fetched} fetched, ${result.stats.created} created, ${result.stats.updated} updated`,
+          stats: result.stats,
+          platform: result.platform
+        };
+      }
+
+      if (result && !result.success) {
+        return {
+          success: false,
+          message: result.error || 'Sync failed',
+          platform: result.platform
+        };
+      }
 
       return {
         success: true,
@@ -150,6 +178,87 @@ export class ApifyService {
     };
   }
 
+  /**
+   * Generate professional fresher-focused configuration for Apify Actor
+   * Targets entry-level positions with 0-2 years experience in India
+   */
+  generateFresherConfig(): any {
+    return {
+      aiEmploymentTypeFilter: [
+        'FULL_TIME',
+        'INTERN'
+      ],
+      aiExperienceLevelFilter: [
+        '0-2'
+      ],
+      aiHasSalary: true,
+      aiVisaSponsorshipFilter: false,
+      ats: [
+        'workday',
+        'greenhouse',
+        'lever.co',
+        'smartrecruiters',
+        'successfactors',
+        'zoho'
+      ],
+      includeAi: true,
+      includeLinkedIn: false,
+      locationSearch: [
+        'India'
+      ],
+      maxJobs: 10,
+      populateAiRemoteLocation: false,
+      populateAiRemoteLocationDerived: false,
+      'remote only (legacy)': false,
+      timeRange: '6m',
+      titleExclusionSearch: [
+        'Senior',
+        'Lead',
+        'Manager',
+        'Director',
+        'VP',
+        'Head',
+        'Principal',
+        'Architect'
+      ],
+      titleSearch: [
+        'Software Engineer',
+        'Software Developer',
+        'Associate Software Engineer',
+        'Graduate Engineer',
+        'Trainee Software Engineer',
+        'Software Intern',
+        'Engineering Intern',
+        'Developer Intern'
+      ]
+    };
+  }
+
+  /**
+   * Generate customizable fresher config with user preferences
+   */
+  generateCustomFresherConfig(options: {
+    maxJobs?: number;
+    locations?: string[];
+    additionalTitles?: string[];
+    includeRemote?: boolean;
+    timeRange?: '1d' | '7d' | '1m' | '3m' | '6m';
+  }): any {
+    const baseConfig = this.generateFresherConfig();
+
+    return {
+      ...baseConfig,
+      maxJobs: options.maxJobs || baseConfig.maxJobs,
+      locationSearch: options.locations || baseConfig.locationSearch,
+      titleSearch: [
+        ...baseConfig.titleSearch,
+        ...(options.additionalTitles || [])
+      ],
+      'remote only (legacy)': options.includeRemote || false,
+      timeRange: options.timeRange || baseConfig.timeRange
+    };
+  }
+
   getPopularActorIds(): Record<string, string> {
     return {
       linkedin: 'apify/linkedin-jobs-scraper',
@@ -193,6 +302,73 @@ export class ApifyService {
 
     if (error) throw error;
     return data || [];
+  }
+
+  async getDefaultConfig(): Promise<JobFetchConfig | null> {
+    const { data, error } = await supabase
+      .from('job_fetch_configs')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async triggerDefaultSync(): Promise<{
+    success: boolean;
+    message: string;
+    config?: JobFetchConfig;
+    stats?: {
+      fetched: number;
+      created: number;
+      updated: number;
+      skipped: number;
+    };
+  }> {
+    try {
+      const config = await this.getDefaultConfig();
+      if (!config) {
+        throw new Error('No active configuration found. Please add a configuration first.');
+      }
+
+      const { data, error } = await supabase.functions.invoke('apify-sync-jobs', {
+        body: { configId: config.id }
+      });
+
+      if (error) throw error;
+
+      const result = data?.results?.[0];
+      if (result?.success && result?.stats) {
+        return {
+          success: true,
+          message: `Sync completed: ${result.stats.fetched} fetched, ${result.stats.created} created, ${result.stats.updated} updated`,
+          config,
+          stats: result.stats
+        };
+      }
+
+      if (result && !result.success) {
+        return {
+          success: false,
+          message: result.error || 'Sync failed',
+          config
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Sync initiated successfully',
+        config
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to trigger sync'
+      };
+    }
   }
 
   async getSyncStats(): Promise<{

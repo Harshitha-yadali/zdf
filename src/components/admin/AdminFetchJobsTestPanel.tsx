@@ -9,16 +9,15 @@ import {
   Briefcase,
   Building,
   MapPin,
-  ExternalLink,
   AlertTriangle,
   Zap,
+  Settings,
 } from 'lucide-react';
 import { apifyService } from '../../services/apifyService';
 import { supabase } from '../../lib/supabase';
-import type { JobFetchConfig, JobSyncLog } from '../../types/jobs';
+import type { JobFetchConfig } from '../../types/jobs';
 
 interface SyncResult {
-  configId: string;
   platform: string;
   success: boolean;
   stats?: {
@@ -43,8 +42,7 @@ interface RecentJob {
 type SyncStatus = 'idle' | 'fetching' | 'success' | 'error';
 
 export const AdminFetchJobsTestPanel: React.FC = () => {
-  const [configs, setConfigs] = useState<JobFetchConfig[]>([]);
-  const [selectedConfigId, setSelectedConfigId] = useState<string>('');
+  const [defaultConfig, setDefaultConfig] = useState<JobFetchConfig | null>(null);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
   const [recentJobs, setRecentJobs] = useState<RecentJob[]>([]);
@@ -54,7 +52,7 @@ export const AdminFetchJobsTestPanel: React.FC = () => {
   const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    loadConfigs();
+    loadDefaultConfig();
     loadRecentJobs();
   }, []);
 
@@ -64,16 +62,12 @@ export const AdminFetchJobsTestPanel: React.FC = () => {
     };
   }, [timerInterval]);
 
-  const loadConfigs = async () => {
+  const loadDefaultConfig = async () => {
     try {
-      const data = await apifyService.getConfigs();
-      setConfigs(data);
-      if (data.length > 0) {
-        const activeConfig = data.find((c: JobFetchConfig) => c.is_active);
-        setSelectedConfigId(activeConfig?.id || data[0].id);
-      }
+      const config = await apifyService.getDefaultConfig();
+      setDefaultConfig(config);
     } catch (error) {
-      console.error('Error loading configs:', error);
+      console.error('Error loading default config:', error);
     } finally {
       setLoading(false);
     }
@@ -115,27 +109,20 @@ export const AdminFetchJobsTestPanel: React.FC = () => {
   };
 
   const handleFetchJobs = async () => {
-    if (!selectedConfigId) {
-      alert('Please select a configuration first');
-      return;
-    }
-
-    const selectedConfig = configs.find(c => c.id === selectedConfigId);
-    if (!selectedConfig) return;
-
     setLogs([]);
     setSyncResult(null);
     setSyncStatus('fetching');
     const timer = startTimer();
 
-    addLog(`Starting job fetch for ${selectedConfig.platform_name}...`);
-    addLog(`Actor ID: ${selectedConfig.actor_id}`);
-    addLog(`Search Config: ${JSON.stringify(selectedConfig.search_config).substring(0, 100)}...`);
+    addLog('Starting job fetch using default configuration...');
 
     try {
-      addLog('Triggering Apify sync via edge function...');
+      const result = await apifyService.triggerDefaultSync();
 
-      const result = await apifyService.triggerManualSync(selectedConfigId);
+      if (result.config) {
+        addLog(`Configuration: ${result.config.platform_name}`);
+        addLog(`Actor ID: ${result.config.actor_id}`);
+      }
 
       if (result.success) {
         addLog('Apify run started successfully!');
@@ -145,52 +132,49 @@ export const AdminFetchJobsTestPanel: React.FC = () => {
 
         addLog('Processing fetched jobs...');
 
-        const { data: latestLog } = await supabase
-          .from('job_sync_logs')
-          .select('*')
-          .eq('config_id', selectedConfigId)
-          .order('sync_started_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        if (result.config) {
+          const { data: latestLog } = await supabase
+            .from('job_sync_logs')
+            .select('*')
+            .eq('config_id', result.config.id)
+            .order('sync_started_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
-        if (latestLog) {
-          const stats = {
-            fetched: latestLog.jobs_fetched || 0,
-            created: latestLog.jobs_created || 0,
-            updated: latestLog.jobs_updated || 0,
-            skipped: latestLog.jobs_skipped || 0,
-          };
+          if (latestLog) {
+            const stats = {
+              fetched: latestLog.jobs_fetched || 0,
+              created: latestLog.jobs_created || 0,
+              updated: latestLog.jobs_updated || 0,
+              skipped: latestLog.jobs_skipped || 0,
+            };
 
-          addLog(`Jobs fetched from Apify: ${stats.fetched}`);
-          addLog(`New jobs created: ${stats.created}`);
-          addLog(`Existing jobs updated: ${stats.updated}`);
-          addLog(`Jobs skipped: ${stats.skipped}`);
+            addLog(`Jobs fetched from Apify: ${stats.fetched}`);
+            addLog(`New jobs created: ${stats.created}`);
+            addLog(`Existing jobs updated: ${stats.updated}`);
+            addLog(`Jobs skipped: ${stats.skipped}`);
 
-          setSyncResult({
-            configId: selectedConfigId,
-            platform: selectedConfig.platform_name,
-            success: true,
-            stats,
-          });
-
-          addLog('Sync completed successfully!');
-          setSyncStatus('success');
-        } else {
-          addLog('Sync triggered - check Sync Logs tab for results');
-          setSyncResult({
-            configId: selectedConfigId,
-            platform: selectedConfig.platform_name,
-            success: true,
-          });
-          setSyncStatus('success');
+            setSyncResult({
+              platform: result.config.platform_name,
+              success: true,
+              stats,
+            });
+          } else {
+            setSyncResult({
+              platform: result.config.platform_name,
+              success: true,
+              stats: result.stats,
+            });
+          }
         }
 
+        addLog('Sync completed successfully!');
+        setSyncStatus('success');
         await loadRecentJobs();
       } else {
         addLog(`Error: ${result.message || 'Unknown error'}`);
         setSyncResult({
-          configId: selectedConfigId,
-          platform: selectedConfig.platform_name,
+          platform: result.config?.platform_name || 'Unknown',
           success: false,
           error: result.message,
         });
@@ -200,8 +184,7 @@ export const AdminFetchJobsTestPanel: React.FC = () => {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       addLog(`Error: ${errorMessage}`);
       setSyncResult({
-        configId: selectedConfigId,
-        platform: selectedConfig.platform_name,
+        platform: 'Unknown',
         success: false,
         error: errorMessage,
       });
@@ -237,77 +220,79 @@ export const AdminFetchJobsTestPanel: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl p-6 text-white">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-3 bg-white/20 rounded-lg">
-            <Zap size={28} />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold">Fetch Jobs - Test Panel</h2>
-            <p className="text-blue-100">Test the job sync flow manually</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-          <div className="bg-white/10 rounded-lg p-4">
-            <label className="block text-sm font-medium text-blue-100 mb-2">
-              Select Platform Configuration
-            </label>
-            <select
-              value={selectedConfigId}
-              onChange={(e) => setSelectedConfigId(e.target.value)}
-              disabled={syncStatus === 'fetching'}
-              className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-lg text-white focus:ring-2 focus:ring-white/50 focus:border-transparent disabled:opacity-50"
-            >
-              <option value="" className="text-gray-900">Select a platform</option>
-              {configs.map((config) => (
-                <option key={config.id} value={config.id} className="text-gray-900">
-                  {config.platform_name} {config.is_active ? '(Active)' : '(Inactive)'}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="bg-white/10 rounded-lg p-4 flex items-center justify-center">
-            <div className="text-center">
-              <div className={`w-4 h-4 rounded-full ${getStatusColor()} mx-auto mb-2 ${syncStatus === 'fetching' ? 'animate-pulse' : ''}`}></div>
-              <p className="text-sm font-medium">
-                {syncStatus === 'idle' && 'Ready'}
-                {syncStatus === 'fetching' && 'Fetching...'}
-                {syncStatus === 'success' && 'Completed'}
-                {syncStatus === 'error' && 'Failed'}
-              </p>
-              {syncStatus === 'fetching' && (
-                <p className="text-xs text-blue-200 mt-1">
-                  Elapsed: {formatTime(elapsedTime)}
-                </p>
-              )}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-white/20 rounded-lg">
+              <Zap size={28} />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold">Fetch Jobs</h2>
+              <p className="text-blue-100">One-click job sync automation</p>
             </div>
           </div>
 
-          <div className="flex items-center">
-            <button
-              onClick={handleFetchJobs}
-              disabled={syncStatus === 'fetching' || !selectedConfigId}
-              className={`w-full py-4 px-6 rounded-lg font-bold text-lg flex items-center justify-center gap-3 transition-all ${
-                syncStatus === 'fetching'
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-green-500 hover:bg-green-600 hover:scale-[1.02] active:scale-[0.98]'
-              }`}
-            >
-              {syncStatus === 'fetching' ? (
-                <>
-                  <RefreshCw className="animate-spin" size={24} />
-                  Fetching Jobs...
-                </>
-              ) : (
-                <>
-                  <Play size={24} />
-                  Fetch Jobs Now
-                </>
-              )}
-            </button>
+          {defaultConfig && (
+            <div className="bg-white/10 rounded-lg px-4 py-2 flex items-center gap-2">
+              <Settings size={16} className="text-blue-200" />
+              <span className="text-sm text-blue-100">
+                Using: <span className="font-semibold text-white">{defaultConfig.platform_name}</span>
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-6">
+          <button
+            onClick={handleFetchJobs}
+            disabled={syncStatus === 'fetching' || !defaultConfig}
+            className={`flex-1 py-5 px-8 rounded-xl font-bold text-xl flex items-center justify-center gap-4 transition-all shadow-lg ${
+              syncStatus === 'fetching'
+                ? 'bg-gray-400 cursor-not-allowed'
+                : !defaultConfig
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-green-500 hover:bg-green-600 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl'
+            }`}
+          >
+            {syncStatus === 'fetching' ? (
+              <>
+                <RefreshCw className="animate-spin" size={28} />
+                Fetching Jobs...
+              </>
+            ) : (
+              <>
+                <Play size={28} />
+                Fetch Jobs Now
+              </>
+            )}
+          </button>
+
+          <div className="bg-white/10 rounded-xl p-4 min-w-[140px] text-center">
+            <div className={`w-5 h-5 rounded-full ${getStatusColor()} mx-auto mb-2 ${syncStatus === 'fetching' ? 'animate-pulse' : ''}`}></div>
+            <p className="text-sm font-medium">
+              {syncStatus === 'idle' && 'Ready'}
+              {syncStatus === 'fetching' && 'Fetching...'}
+              {syncStatus === 'success' && 'Completed'}
+              {syncStatus === 'error' && 'Failed'}
+            </p>
+            {syncStatus === 'fetching' && (
+              <p className="text-xs text-blue-200 mt-1">
+                {formatTime(elapsedTime)}
+              </p>
+            )}
           </div>
         </div>
+
+        {!defaultConfig && (
+          <div className="mt-4 bg-yellow-500/20 border border-yellow-400/30 rounded-lg p-4 flex items-start gap-3">
+            <AlertTriangle className="text-yellow-300 flex-shrink-0 mt-0.5" size={20} />
+            <div>
+              <p className="font-medium text-yellow-100">No configuration found</p>
+              <p className="text-sm text-yellow-200 mt-1">
+                Please add an Apify configuration in the "Configuration Manager" tab first.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -481,9 +466,8 @@ export const AdminFetchJobsTestPanel: React.FC = () => {
           How This Works
         </h4>
         <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
-          <li>Select a platform configuration from the dropdown</li>
           <li>Click "Fetch Jobs Now" to trigger the Apify sync</li>
-          <li>Apify scrapes jobs from the configured job board</li>
+          <li>Apify scrapes jobs using your saved JSON configuration</li>
           <li>Jobs are processed and saved to the database</li>
           <li>New jobs appear in the "Recently Synced Jobs" section</li>
           <li>Check "Sync Logs" tab for detailed sync history</li>
