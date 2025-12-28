@@ -8,6 +8,8 @@ export const AdminApifyConfigManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingConfig, setEditingConfig] = useState<JobFetchConfig | null>(null);
+  const [syncingConfigs, setSyncingConfigs] = useState<Set<string>>(new Set());
+  const [syncingAll, setSyncingAll] = useState(false);
 
   useEffect(() => {
     loadConfigs();
@@ -50,17 +52,67 @@ export const AdminApifyConfigManager: React.FC = () => {
   };
 
   const handleManualSync = async (id: string) => {
+    setSyncingConfigs(prev => new Set(prev).add(id));
     try {
       const result = await apifyService.triggerManualSync(id);
       if (result.success) {
-        alert('Sync initiated successfully! Check the sync logs for progress.');
+        alert('✅ Sync started successfully! Check the Sync Logs tab for progress.');
+        await loadConfigs();
       } else {
-        alert(`Failed to trigger sync: ${result.message}`);
+        alert(`❌ Failed to trigger sync: ${result.message}`);
       }
     } catch (error) {
       console.error('Error triggering sync:', error);
-      alert('Failed to trigger sync');
+      alert('❌ Failed to trigger sync. Please check your configuration.');
+    } finally {
+      setSyncingConfigs(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
+  };
+
+  const handleSyncAll = async () => {
+    const activeConfigs = configs.filter(c => c.is_active);
+    if (activeConfigs.length === 0) {
+      alert('No active configurations to sync');
+      return;
+    }
+
+    if (!confirm(`Run sync for all ${activeConfigs.length} active platform(s)?`)) {
+      return;
+    }
+
+    setSyncingAll(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const config of activeConfigs) {
+      setSyncingConfigs(prev => new Set(prev).add(config.id));
+      try {
+        const result = await apifyService.triggerManualSync(config.id);
+        if (result.success) {
+          successCount++;
+        } else {
+          failCount++;
+        }
+      } catch (error) {
+        console.error(`Error syncing ${config.platform_name}:`, error);
+        failCount++;
+      } finally {
+        setSyncingConfigs(prev => {
+          const next = new Set(prev);
+          next.delete(config.id);
+          return next;
+        });
+      }
+    }
+
+    setSyncingAll(false);
+    await loadConfigs();
+
+    alert(`✅ Sync Complete!\n\nSuccess: ${successCount}\nFailed: ${failCount}\n\nCheck Sync Logs for details.`);
   };
 
   const handleEdit = (config: JobFetchConfig) => {
@@ -88,6 +140,29 @@ export const AdminApifyConfigManager: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Info Banner */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <div className="bg-blue-100 p-2 rounded-lg">
+            <RefreshCw className="w-5 h-5 text-blue-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-blue-900 mb-1">How Job Sync Works</h3>
+            <div className="text-sm text-blue-800 space-y-1">
+              <p>
+                <strong>Automatic:</strong> Active platforms sync every <strong>8 hours</strong> automatically (configured in sync frequency)
+              </p>
+              <p>
+                <strong>Manual:</strong> Click <strong>"Run Now"</strong> button to fetch jobs immediately without waiting
+              </p>
+              <p>
+                <strong>Bulk:</strong> Use <strong>"Sync All Active"</strong> to run all active platforms at once
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Apify Configuration Manager</h2>
@@ -95,13 +170,47 @@ export const AdminApifyConfigManager: React.FC = () => {
             Manage job platform connections and sync configurations
           </p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Add Configuration
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleSyncAll}
+            disabled={syncingAll || configs.filter(c => c.is_active).length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCw className={`w-4 h-4 ${syncingAll ? 'animate-spin' : ''}`} />
+            {syncingAll ? 'Syncing All...' : 'Sync All Active'}
+          </button>
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Add Configuration
+          </button>
+        </div>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="text-sm text-blue-600 font-medium">Total Platforms</div>
+          <div className="text-2xl font-bold text-blue-900">{configs.length}</div>
+        </div>
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="text-sm text-green-600 font-medium">Active</div>
+          <div className="text-2xl font-bold text-green-900">
+            {configs.filter(c => c.is_active).length}
+          </div>
+        </div>
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <div className="text-sm text-gray-600 font-medium">Inactive</div>
+          <div className="text-2xl font-bold text-gray-900">
+            {configs.filter(c => !c.is_active).length}
+          </div>
+        </div>
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+          <div className="text-sm text-purple-600 font-medium">Syncing Now</div>
+          <div className="text-2xl font-bold text-purple-900">{syncingConfigs.size}</div>
+        </div>
       </div>
 
       {showForm && (
@@ -118,10 +227,14 @@ export const AdminApifyConfigManager: React.FC = () => {
             <p className="text-gray-600">No configurations found. Add your first platform connection!</p>
           </div>
         ) : (
-          configs.map((config) => (
+          configs.map((config) => {
+            const isSyncing = syncingConfigs.has(config.id);
+            return (
             <div
               key={config.id}
-              className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+              className={`bg-white border rounded-lg p-6 hover:shadow-md transition-all ${
+                isSyncing ? 'border-blue-400 shadow-lg' : 'border-gray-200'
+              }`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -129,7 +242,12 @@ export const AdminApifyConfigManager: React.FC = () => {
                     <h3 className="text-lg font-semibold text-gray-900">
                       {config.platform_name}
                     </h3>
-                    {config.is_active ? (
+                    {isSyncing ? (
+                      <span className="flex items-center gap-1 text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full animate-pulse">
+                        <RefreshCw className="w-3 h-3 animate-spin" />
+                        Syncing...
+                      </span>
+                    ) : config.is_active ? (
                       <span className="flex items-center gap-1 text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">
                         <CheckCircle className="w-3 h-3" />
                         Active
@@ -165,11 +283,18 @@ export const AdminApifyConfigManager: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleManualSync(config.id)}
-                    disabled={!config.is_active}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Trigger manual sync"
+                    disabled={!config.is_active || isSyncing}
+                    className={`px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                      isSyncing
+                        ? 'bg-blue-100 text-blue-600 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    title={isSyncing ? 'Sync in progress...' : 'Run sync now'}
                   >
-                    <RefreshCw className="w-4 h-4" />
+                    <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                    <span className="text-sm font-medium">
+                      {isSyncing ? 'Syncing...' : 'Run Now'}
+                    </span>
                   </button>
                   <button
                     onClick={() => handleToggleActive(config.id, config.is_active)}
@@ -199,7 +324,8 @@ export const AdminApifyConfigManager: React.FC = () => {
                 </div>
               </div>
             </div>
-          ))
+          );
+          })
         )}
       </div>
     </div>
@@ -392,13 +518,56 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ config, onClose, onSuccess }) =
               value={searchConfigJson}
               onChange={(e) => setSearchConfigJson(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
-              rows={8}
+              rows={10}
               placeholder='{"keywords": ["software engineer"], "location": "India"}'
               required
             />
-            <p className="mt-1 text-xs text-gray-500">
-              Configure search parameters as JSON. Auto-generated based on platform selection.
-            </p>
+            <div className="mt-2 space-y-2">
+              <p className="text-xs text-gray-500">
+                <strong>Edit the JSON above to customize job search parameters.</strong> This JSON controls what jobs Apify will fetch.
+              </p>
+              <details className="text-xs text-gray-600">
+                <summary className="cursor-pointer font-medium text-blue-600 hover:underline">
+                  View Example Configurations
+                </summary>
+                <div className="mt-2 space-y-3 bg-gray-50 p-3 rounded border border-gray-200">
+                  <div>
+                    <p className="font-semibold mb-1">LinkedIn Example:</p>
+                    <pre className="bg-white p-2 rounded text-xs overflow-x-auto">
+{`{
+  "keywords": ["React Developer", "Node.js"],
+  "location": "India",
+  "datePosted": "week",
+  "experienceLevel": ["Entry level", "Mid-Senior"],
+  "jobType": ["Full-time"]
+}`}
+                    </pre>
+                  </div>
+                  <div>
+                    <p className="font-semibold mb-1">Indeed Example:</p>
+                    <pre className="bg-white p-2 rounded text-xs overflow-x-auto">
+{`{
+  "position": "Software Engineer",
+  "location": "Bangalore",
+  "maxItems": 100,
+  "datePosted": "7"
+}`}
+                    </pre>
+                  </div>
+                  <div>
+                    <p className="font-semibold mb-1">Naukri Example:</p>
+                    <pre className="bg-white p-2 rounded text-xs overflow-x-auto">
+{`{
+  "keywords": "Python Developer",
+  "location": "Mumbai",
+  "experience": "0-3",
+  "salary": "3-8"
+}`}
+                    </pre>
+                  </div>
+                </div>
+              </details>
+            </div>
           </div>
 
           <div className="flex items-center">
