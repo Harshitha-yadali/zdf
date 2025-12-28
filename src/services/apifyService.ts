@@ -249,6 +249,68 @@ export class ApifyService {
       errors
     };
   }
+
+  async getScheduledSyncs(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('apify_scheduled_syncs')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async createScheduledSync(schedule: {
+    config_id: string;
+    schedule_name: string;
+    cron_expression: string;
+    timezone: string;
+    is_active: boolean;
+  }): Promise<any> {
+    const { data: userData } = await supabase.auth.getUser();
+
+    const { data, error } = await supabase
+      .from('apify_scheduled_syncs')
+      .insert({
+        ...schedule,
+        created_by: userData?.user?.id
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async updateScheduledSync(id: string, updates: Partial<any>): Promise<any> {
+    const { data, error } = await supabase
+      .from('apify_scheduled_syncs')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteScheduledSync(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('apify_scheduled_syncs')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  }
+
+  async getSyncMetrics(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('apify_sync_metrics')
+      .select('*');
+
+    if (error) throw error;
+    return data || [];
+  }
 }
 
 export const apifyService = new ApifyService();

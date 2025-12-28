@@ -6,9 +6,11 @@ import { AdminApifyConfigManager } from '../components/admin/AdminApifyConfigMan
 import { AdminJobSyncDashboard } from '../components/admin/AdminJobSyncDashboard';
 import { AdminJobUpdatesManager } from '../components/admin/AdminJobUpdatesManager';
 import { ApifyDataViewer } from '../components/admin/ApifyDataViewer';
+import { ScheduledSyncManager } from '../components/admin/ScheduledSyncManager';
+import { SyncHistoryGraph } from '../components/admin/SyncHistoryGraph';
 
 const AdminPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'questions' | 'materials' | 'payments' | 'apify-config' | 'sync-logs' | 'apify-json' | 'job-updates'>('questions');
+  const [activeTab, setActiveTab] = useState<'questions' | 'materials' | 'payments' | 'apify-config' | 'sync-logs' | 'apify-json' | 'job-updates' | 'scheduled-syncs' | 'sync-history'>('questions');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({
@@ -547,6 +549,26 @@ const AdminPage: React.FC = () => {
               >
                 Job Updates
               </button>
+              <button
+                onClick={() => setActiveTab('scheduled-syncs')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                  activeTab === 'scheduled-syncs'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Scheduled Syncs
+              </button>
+              <button
+                onClick={() => setActiveTab('sync-history')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                  activeTab === 'sync-history'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Sync History
+              </button>
             </nav>
           </div>
         </div>
@@ -755,6 +777,14 @@ const AdminPage: React.FC = () => {
 
         {/* Job Updates Tab */}
         {activeTab === 'job-updates' && <AdminJobUpdatesManager />}
+
+        {/* Scheduled Syncs Tab */}
+        {activeTab === 'scheduled-syncs' && (
+          <ScheduledSyncManagerWrapper />
+        )}
+
+        {/* Sync History Tab */}
+        {activeTab === 'sync-history' && <SyncHistoryGraph />}
 
         {/* Question Form Modal */}
         {showQuestionForm && (
@@ -1186,6 +1216,38 @@ const AdminPage: React.FC = () => {
       </div>
     </div>
   );
+};
+
+const ScheduledSyncManagerWrapper: React.FC = () => {
+  const [configs, setConfigs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadConfigs();
+  }, []);
+
+  const loadConfigs = async () => {
+    try {
+      setLoading(true);
+      const { apifyService } = await import('../services/apifyService');
+      const data = await apifyService.getConfigs();
+      setConfigs(data);
+    } catch (error) {
+      console.error('Error loading configs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  return <ScheduledSyncManager configs={configs} />;
 };
 
 export default AdminPage;
