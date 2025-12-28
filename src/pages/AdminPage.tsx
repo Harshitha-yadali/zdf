@@ -8,9 +8,10 @@ import { AdminJobUpdatesManager } from '../components/admin/AdminJobUpdatesManag
 import { ApifyDataViewer } from '../components/admin/ApifyDataViewer';
 import { ScheduledSyncManager } from '../components/admin/ScheduledSyncManager';
 import { SyncHistoryGraph } from '../components/admin/SyncHistoryGraph';
+import { AdminFetchJobsTestPanel } from '../components/admin/AdminFetchJobsTestPanel';
 
 const AdminPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'questions' | 'materials' | 'payments' | 'apify-config' | 'sync-logs' | 'apify-json' | 'job-updates' | 'scheduled-syncs' | 'sync-history'>('questions');
+  const [activeTab, setActiveTab] = useState<'questions' | 'materials' | 'payments' | 'fetch-jobs' | 'apify-config' | 'sync-logs' | 'apify-json' | 'job-updates' | 'scheduled-syncs' | 'sync-history'>('questions');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({
@@ -510,6 +511,16 @@ const AdminPage: React.FC = () => {
                 Payment Settings
               </button>
               <button
+                onClick={() => setActiveTab('fetch-jobs')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                  activeTab === 'fetch-jobs'
+                    ? 'border-green-500 text-green-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Fetch Jobs
+              </button>
+              <button
                 onClick={() => setActiveTab('apify-config')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
                   activeTab === 'apify-config'
@@ -765,6 +776,9 @@ const AdminPage: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Fetch Jobs Test Tab */}
+        {activeTab === 'fetch-jobs' && <AdminFetchJobsTestPanel />}
 
         {/* Apify Config Tab */}
         {activeTab === 'apify-config' && <AdminApifyConfigManager />}
