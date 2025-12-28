@@ -231,3 +231,43 @@ export interface ApifySyncResult {
   };
   error?: string;
 }
+
+export type JobUpdateCategory =
+  | 'market_trend'
+  | 'hiring_news'
+  | 'industry_update'
+  | 'platform_update'
+  | 'salary_insights'
+  | 'skill_demand';
+
+export interface JobUpdateMetadata {
+  tags?: string[];
+  stats?: {
+    [key: string]: number | string;
+  };
+  links?: {
+    title: string;
+    url: string;
+  }[];
+  companies?: string[];
+  locations?: string[];
+  [key: string]: any;
+}
+
+export interface JobUpdate {
+  id: string;
+  title: string;
+  description: string;
+  content: string;
+  category: JobUpdateCategory;
+  source_platform?: string;
+  metadata: JobUpdateMetadata;
+  image_url?: string;
+  external_link?: string;
+  is_featured: boolean;
+  is_active: boolean;
+  published_at: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}

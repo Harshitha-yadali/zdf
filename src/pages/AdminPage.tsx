@@ -5,9 +5,10 @@ import { supabaseStorage } from '../utils/supabaseStorage';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { AdminApifyConfigManager } from '../components/admin/AdminApifyConfigManager';
 import { AdminJobSyncDashboard } from '../components/admin/AdminJobSyncDashboard';
+import { AdminJobUpdatesManager } from '../components/admin/AdminJobUpdatesManager';
 
 const AdminPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'questions' | 'materials' | 'payments' | 'apify-config' | 'sync-logs'>('questions');
+  const [activeTab, setActiveTab] = useState<'questions' | 'materials' | 'payments' | 'apify-config' | 'sync-logs' | 'job-updates'>('questions');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({
@@ -523,6 +524,16 @@ const AdminPage: React.FC = () => {
               >
                 Sync Logs
               </button>
+              <button
+                onClick={() => setActiveTab('job-updates')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                  activeTab === 'job-updates'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Job Updates
+              </button>
             </nav>
           </div>
         </div>
@@ -725,6 +736,9 @@ const AdminPage: React.FC = () => {
 
         {/* Sync Logs Tab */}
         {activeTab === 'sync-logs' && <AdminJobSyncDashboard />}
+
+        {/* Job Updates Tab */}
+        {activeTab === 'job-updates' && <AdminJobUpdatesManager />}
 
         {/* Question Form Modal */}
         {showQuestionForm && (
