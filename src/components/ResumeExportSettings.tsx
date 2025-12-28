@@ -266,7 +266,7 @@ export const ResumeExportSettings: React.FC<ResumeExportSettingsProps> = ({
         </div>
 
         {/* Export Buttons */}
-        <div className="card p-4 sm:p-6">
+        <div className="card-surface p-4">
           <div className="space-y-4">
             <button
               onClick={() => handleExportClick('pdf')}
