@@ -502,6 +502,10 @@ export class ATSScoreChecker16Parameter {
     jobDescription?: string
   ): Record<string, number> {
     
+    // Helper function to safely get percentage with fallback
+    const safePercentage = (obj: any): number => obj?.percentage ?? 0;
+    const safeScore = (obj: any): number => obj?.score ?? 0;
+    
     // Start with enhanced scoring as baseline but apply intelligent adjustments
     const baseScores = {
       // Skills & Keywords Group (45 points total) - Use intelligent scoring
@@ -515,52 +519,52 @@ export class ATSScoreChecker16Parameter {
       
       // Technical & Critical Metrics (18 points total)
       technicalCompetencies: Math.max(
-        Math.round((enhancedScore.critical_metrics.technical_skills_alignment.percentage / 100) * 12),
-        enhancedScore.critical_metrics.technical_skills_alignment.score > 0 ? 2 : 0
+        Math.round((safePercentage(enhancedScore?.critical_metrics?.technical_skills_alignment) / 100) * 12),
+        safeScore(enhancedScore?.critical_metrics?.technical_skills_alignment) > 0 ? 2 : 0
       ),
       quantifiedAchievements: this.calculateQuantifiedAchievements(enhancedScore),
       jobTitleMatch: Math.max(
-        Math.round((enhancedScore.critical_metrics.job_title_relevance.percentage / 100) * 6),
-        enhancedScore.critical_metrics.job_title_relevance.score > 0 ? 1 : 0
+        Math.round((safePercentage(enhancedScore?.critical_metrics?.job_title_relevance) / 100) * 6),
+        safeScore(enhancedScore?.critical_metrics?.job_title_relevance) > 0 ? 1 : 0
       ),
       
       // Education & Certifications (15 points total)
       educationScore: Math.max(
-        Math.round((enhancedScore.tier_scores.education.percentage / 100) * 10),
-        enhancedScore.tier_scores.education.score > 0 ? 2 : 0
+        Math.round((safePercentage(enhancedScore?.tier_scores?.education) / 100) * 10),
+        safeScore(enhancedScore?.tier_scores?.education) > 0 ? 2 : 0
       ),
       certifications: Math.max(
-        Math.round((enhancedScore.tier_scores.certifications.percentage / 100) * 5),
-        enhancedScore.tier_scores.certifications.score > 0 ? 1 : 0
+        Math.round((safePercentage(enhancedScore?.tier_scores?.certifications) / 100) * 5),
+        safeScore(enhancedScore?.tier_scores?.certifications) > 0 ? 1 : 0
       ),
       
       // Structure & Quality (13 points total)
       formatting: Math.max(
-        Math.round((enhancedScore.tier_scores.basic_structure.percentage / 100) * 5),
+        Math.round((safePercentage(enhancedScore?.tier_scores?.basic_structure) / 100) * 5),
         2 // Minimum formatting score
       ),
       contentQuality: Math.max(
-        Math.round((enhancedScore.tier_scores.content_structure.percentage / 100) * 4),
+        Math.round((safePercentage(enhancedScore?.tier_scores?.content_structure) / 100) * 4),
         1 // Minimum content quality
       ),
       grammar: Math.max(
-        Math.round((enhancedScore.tier_scores.qualitative.percentage / 100) * 3),
+        Math.round((safePercentage(enhancedScore?.tier_scores?.qualitative) / 100) * 3),
         1 // Minimum grammar score
       ),
       resumeLength: Math.max(
-        Math.round((enhancedScore.tier_scores.basic_structure.percentage / 100) * 2),
+        Math.round((safePercentage(enhancedScore?.tier_scores?.basic_structure) / 100) * 2),
         1 // Minimum length score
       ),
       
       // Industry & Competitive (7 points total)
       industryExperience: Math.max(
-        Math.round((enhancedScore.tier_scores.competitive.percentage / 100) * 7),
-        enhancedScore.tier_scores.competitive.score > 0 ? 1 : 0
+        Math.round((safePercentage(enhancedScore?.tier_scores?.competitive) / 100) * 7),
+        safeScore(enhancedScore?.tier_scores?.competitive) > 0 ? 1 : 0
       ),
       
       // Filename Quality (2 points)
       filenameQuality: Math.max(
-        Math.round((enhancedScore.tier_scores.basic_structure.percentage / 100) * 2),
+        Math.round((safePercentage(enhancedScore?.tier_scores?.basic_structure) / 100) * 2),
         1 // Minimum filename score
       )
     };
@@ -578,13 +582,17 @@ export class ATSScoreChecker16Parameter {
   ): number {
     const maxScore = 15;
     
+    // Safely get experience percentage with fallback
+    const experiencePercentage = enhancedScore?.tier_scores?.experience?.percentage ?? 0;
+    
     // Start with enhanced score
-    let score = Math.round((enhancedScore.tier_scores.experience.percentage / 100) * maxScore);
+    let score = Math.round((experiencePercentage / 100) * maxScore);
     
     // FIXED: Domain mismatch detection based on JD keyword match
     if (jobDescription) {
-      const jdMatchPercentage = enhancedScore.critical_metrics.jd_keywords_match.percentage;
-      const expRelevancePercentage = enhancedScore.critical_metrics.experience_relevance.percentage;
+      const jdMatchPercentage = enhancedScore?.critical_metrics?.jd_keywords_match?.percentage ?? 0;
+      const expRelevancePercentage = enhancedScore?.critical_metrics?.experience_relevance?.percentage ?? 0;
+      const expRelevanceScore = enhancedScore?.critical_metrics?.experience_relevance?.score ?? 0;
       
       // If both JD match and experience relevance are low, this is a domain mismatch
       if (jdMatchPercentage < 25 && expRelevancePercentage < 30) {
@@ -593,13 +601,14 @@ export class ATSScoreChecker16Parameter {
       } else if (jdMatchPercentage < 40 && expRelevancePercentage < 50) {
         // Moderate domain mismatch - cap score at 6 (40% of max)
         score = Math.min(score, 6);
-      } else if (enhancedScore.critical_metrics.experience_relevance.score > 1) {
+      } else if (expRelevanceScore > 1) {
         // Only boost if experience relevance is significant
         score = Math.max(score, 2);
       }
     } else {
       // Normal mode - only apply minimal boost if there's actual relevant experience
-      if (enhancedScore.critical_metrics.experience_relevance.score > 1) {
+      const expRelevanceScore = enhancedScore?.critical_metrics?.experience_relevance?.score ?? 0;
+      if (expRelevanceScore > 1) {
         score = Math.max(score, 2);
       }
     }
@@ -613,16 +622,21 @@ export class ATSScoreChecker16Parameter {
   private static calculateEmploymentHistory(enhancedScore: EnhancedComprehensiveScore): number {
     const maxScore = 8;
     
+    // Safely get experience percentage with fallback
+    const experiencePercentage = enhancedScore?.tier_scores?.experience?.percentage ?? 0;
+    const experienceScore = enhancedScore?.tier_scores?.experience?.score ?? 0;
+    
     // Start with enhanced score
-    let score = Math.round((enhancedScore.tier_scores.experience.percentage / 100) * maxScore);
+    let score = Math.round((experiencePercentage / 100) * maxScore);
     
     // Ensure minimum if experience exists
-    if (enhancedScore.tier_scores.experience.score > 0) {
+    if (experienceScore > 0) {
       score = Math.max(score, 2);
     }
     
     // Boost if no red flags in employment
-    if (enhancedScore.red_flags.length === 0) {
+    const redFlags = enhancedScore?.red_flags ?? [];
+    if (redFlags.length === 0) {
       score = Math.max(score, Math.round(maxScore * 0.5));
     }
     
@@ -635,17 +649,22 @@ export class ATSScoreChecker16Parameter {
   private static calculateCareerProgression(enhancedScore: EnhancedComprehensiveScore): number {
     const maxScore = 6;
     
+    // Safely get experience percentage with fallback
+    const experiencePercentage = enhancedScore?.tier_scores?.experience?.percentage ?? 0;
+    const experienceScore = enhancedScore?.tier_scores?.experience?.score ?? 0;
+    const competitivePercentage = enhancedScore?.tier_scores?.competitive?.percentage ?? 0;
+    
     // Start with enhanced score
-    let score = Math.round((enhancedScore.tier_scores.experience.percentage / 100) * maxScore);
+    let score = Math.round((experiencePercentage / 100) * maxScore);
     
     // Look for progression indicators in the enhanced score
-    if (enhancedScore.tier_scores.experience.score > 0) {
+    if (experienceScore > 0) {
       // If experience exists, assume some progression
       score = Math.max(score, 1);
     }
     
     // Check if competitive tier shows good progression
-    if (enhancedScore.tier_scores.competitive.percentage > 50) {
+    if (competitivePercentage > 50) {
       score = Math.max(score, Math.round(maxScore * 0.5));
     }
     
@@ -658,17 +677,22 @@ export class ATSScoreChecker16Parameter {
   private static calculateQuantifiedAchievements(enhancedScore: EnhancedComprehensiveScore): number {
     const maxScore = 8;
     
+    // Safely get quantified results percentage with fallback
+    const quantifiedPercentage = enhancedScore?.critical_metrics?.quantified_results_presence?.percentage ?? 0;
+    const quantifiedScore = enhancedScore?.critical_metrics?.quantified_results_presence?.score ?? 0;
+    const competitivePercentage = enhancedScore?.tier_scores?.competitive?.percentage ?? 0;
+    
     // Start with enhanced score
-    let score = Math.round((enhancedScore.critical_metrics.quantified_results_presence.percentage / 100) * maxScore);
+    let score = Math.round((quantifiedPercentage / 100) * maxScore);
     
     // FIXED: Removed artificial score floors
     // Only boost if there's actual quantified content (score > 1)
-    if (enhancedScore.critical_metrics.quantified_results_presence.score > 1) {
+    if (quantifiedScore > 1) {
       score = Math.max(score, 2);
     }
     
     // FIXED: Reduced thresholds for competitive tier boost
-    if (enhancedScore.tier_scores.competitive.percentage > 70) {
+    if (competitivePercentage > 70) {
       score = Math.max(score, Math.round(maxScore * 0.3)); // Reduced from 40% to 30%
     }
     
@@ -685,12 +709,15 @@ export class ATSScoreChecker16Parameter {
   ): number {
     const maxScore = 25;
     
+    // Safely get skills_keywords percentage with fallback
+    const skillsKeywordsPercentage = enhancedScore?.tier_scores?.skills_keywords?.percentage ?? 0;
+    
     // Start with enhanced score
-    let score = Math.round((enhancedScore.tier_scores.skills_keywords.percentage / 100) * maxScore);
+    let score = Math.round((skillsKeywordsPercentage / 100) * maxScore);
     
     // If JD-based scoring, prioritize JD keyword match
     if (jobDescription) {
-      const jdMatchPercentage = enhancedScore.critical_metrics.jd_keywords_match.percentage;
+      const jdMatchPercentage = enhancedScore?.critical_metrics?.jd_keywords_match?.percentage ?? 0;
       const jdMatchScore = Math.round((jdMatchPercentage / 100) * maxScore);
       
       // FIXED: Domain mismatch detection - if JD match is very low (<20%), apply heavy penalty
@@ -718,11 +745,14 @@ export class ATSScoreChecker16Parameter {
   ): number {
     const maxScore = 20;
     
+    // Safely get skills_keywords percentage with fallback
+    const skillsKeywordsPercentage = enhancedScore?.tier_scores?.skills_keywords?.percentage ?? 0;
+    
     // Start with enhanced score
-    let score = Math.round((enhancedScore.tier_scores.skills_keywords.percentage / 100) * maxScore);
+    let score = Math.round((skillsKeywordsPercentage / 100) * maxScore);
     
     // Boost based on technical skills alignment
-    const techPercentage = enhancedScore.critical_metrics.technical_skills_alignment.percentage;
+    const techPercentage = enhancedScore?.critical_metrics?.technical_skills_alignment?.percentage ?? 0;
     const techScore = Math.round((techPercentage / 100) * maxScore);
     
     // FIXED: Domain mismatch detection
