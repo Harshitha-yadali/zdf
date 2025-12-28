@@ -44,7 +44,7 @@ Given:
 1. Score each resume project (0-100) based on how well it fits the job description and role.
 2. Replace any project with score below 80.
 3. Recommend 5 GitHub open-source projects with exact GitHub URLs.
-4. For each project, write 3 bullet points (up to 20 words) showing how it fits the JD and role.
+4. For each project, write 3 bullet points (9-10 words max) showing how it fits the JD and role.
 5. Highlight tech stack, role relevance, and contributions using action verbs.
 6. Avoid suggesting the same project twice.
 7. Output in this JSON format:
@@ -62,16 +62,16 @@ Given:
       "title": "GitHub Project Name",
       "githubUrl": "https://github.com/username/repo",
       "bullets": [
-        "Bullet point 1 - up to 20 words",
-        "Bullet point 2 - up to 20 words",
-        "Bullet point 3 - up to 20 words"
+        "Bullet point 1 - 9-10 words max",
+        "Bullet point 2 - 9-10 words max",
+        "Bullet point 3 - 9-10 words max"
       ]
     }
   ]
 }
 
 CRITICAL REQUIREMENTS:
-- Each bullet point MUST be up to 20 words
+- Each bullet point MUST be 9-10 words maximum
 - Start each bullet with strong action verbs (Developed, Implemented, Architected, etc.)
 - NO weak verbs like "helped", "assisted", "worked on"
 - Include specific technologies from the job description

@@ -60,9 +60,9 @@ Respond ONLY with valid JSON in this exact structure:
         "title": "Suggested Project Title",
         "description": "Brief description of what to build",
         "bulletPoints": [
-          "First bullet point - up to 20 words that are relevant to the role and JD",
-          "Second bullet point - up to 20 words that are relevant to the role and JD",
-          "Third bullet point - up to 20 words that are relevant to the role and JD"
+          "First bullet point - 9-10 words max relevant to role and JD",
+          "Second bullet point - 9-10 words max relevant to role and JD",
+          "Third bullet point - 9-10 words max relevant to role and JD"
         ]
       }
     }

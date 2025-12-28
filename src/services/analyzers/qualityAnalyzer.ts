@@ -78,10 +78,10 @@ export class QualityAnalyzer implements QualityAnalyzerInterface {
     bullets.forEach(bullet => {
       let bulletScore = 100;
       
-      // Length check (ideal: 15-25 words)
+      // Length check (ideal: 9-10 words)
       const wordCount = bullet.split(/\s+/).length;
-      if (wordCount < 10) bulletScore -= 20; // Too short
-      if (wordCount > 30) bulletScore -= 15; // Too long
+      if (wordCount < 6) bulletScore -= 20; // Too short
+      if (wordCount > 12) bulletScore -= 15; // Too long
       
       // Starts with action verb
       const startsWithActionVerb = this.STRONG_ACTION_VERBS.some(verb => 

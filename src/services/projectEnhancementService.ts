@@ -117,7 +117,7 @@ Your task:
 2. For each project, provide:
    - Project Title (short and readable)
    - Exact GitHub Link from the search results
-   - 3 Bullet Points (each bullet ≤ 20 words, aligned with the JD, highlighting tech, role-specific contributions, or key features)
+   - 3 Bullet Points (each bullet 9-10 words max, aligned with the JD, highlighting tech, role-specific contributions, or key features)
 
 3. Also provide:
    - A list of missing skills from the job requirements
@@ -125,7 +125,7 @@ Your task:
    - Recommended number of projects to add (1-3)
 
 CRITICAL REQUIREMENTS:
-- Each bullet point MUST be EXACTLY 20 words or less
+- Each bullet point MUST be 9-10 words maximum
 - Start each bullet with a strong action verb (Developed, Implemented, Architected, etc.)
 - NO weak verbs like "helped", "assisted", "worked on"
 - Include specific technologies from the tech stack
@@ -146,9 +146,9 @@ Respond ONLY with valid JSON in this exact structure:
       "githubLink": "exact_github_url_from_search_results",
       "description": "Short project description",
       "bullets": [
-        "Bullet 1 - exactly 20 words or less",
-        "Bullet 2 - exactly 20 words or less",
-        "Bullet 3 - exactly 20 words or less"
+        "Bullet 1 - 9-10 words max",
+        "Bullet 2 - 9-10 words max",
+        "Bullet 3 - 9-10 words max"
       ],
       "relevanceScore": 1-5,
       "techStack": ["tech1", "tech2", "tech3"],
@@ -286,7 +286,7 @@ REQUIREMENTS:
 3. Include specific technologies from the tech stack
 4. Align with job requirements and keywords
 5. Use action verbs and quantifiable results where possible
-6. Each bullet should be exactly 20 words
+6. Each bullet should be 9-10 words maximum
 
 Respond with only the bullet points, one per line, starting with "•"`;
 

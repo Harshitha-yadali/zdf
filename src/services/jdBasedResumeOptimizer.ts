@@ -1078,7 +1078,7 @@ export class JDBasedResumeOptimizer {
     // Step 4: Apply STAR format structure
     rewritten = this.applySTARFormat(rewritten, roleEmphasis);
     
-    // Step 5: Ensure proper length (15-25 words)
+    // Step 5: Ensure proper length (9-10 words)
     rewritten = this.ensureProperLength(rewritten);
     
     return rewritten;

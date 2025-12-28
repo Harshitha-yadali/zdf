@@ -371,7 +371,7 @@ Generate exactly 3 bullet points that:
 1. Start with strong action verbs
 2. Highlight technical achievements
 3. Include specific technologies and metrics
-4. Each bullet is 15-20 words maximum
+4. Each bullet is 9-10 words maximum
 5. Focus on impact and results
 
 Return ONLY a JSON array: ["bullet1", "bullet2", "bullet3"]`;

@@ -211,7 +211,7 @@ SECTION ORDER FOR FRESHERS:
   const promptContent = `${getPromptForUserType(userType)}
 
 CRITICAL REQUIREMENTS FOR BULLET POINTS:
-1. Each bullet point MUST be concise, containing maximum 15 words (not 10).
+1. Each bullet point MUST be concise, containing maximum 9-10 words only.
 2. Include at least 30 relevant keywords from the job description across all bullet points.
 3. Use STRONG ACTION VERBS only (no weak verbs like "helped", "assisted", "worked on", "was responsible for", "participated in", "involved in", "contributed to")
 4. Start each bullet with powerful verbs like: Developed, Implemented, Architected, Optimized, Engineered, Designed, Led, Managed, Created, Built, Delivered, Achieved, Increased, Reduced, Streamlined, Automated, Transformed, Executed, Spearheaded, Established

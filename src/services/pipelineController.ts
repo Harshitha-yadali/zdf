@@ -2547,7 +2547,7 @@ export class PipelineController {
       rewritten += ', resulting in improved efficiency and performance';
     }
     
-    // Ensure proper length (15-25 words for experience bullets)
+    // Ensure proper length (9-10 words for experience bullets)
     const words = rewritten.split(' ');
     if (words.length < 12) {
       rewritten += ' to enhance system performance and user experience';
@@ -2595,7 +2595,7 @@ export class PipelineController {
       rewritten += ' with 99% uptime and fast response times';
     }
     
-    // Ensure proper length (12-20 words for project bullets)
+    // Ensure proper length (9-10 words for project bullets)
     const words = rewritten.split(' ');
     if (words.length < 10) {
       rewritten += ' demonstrating technical proficiency and problem-solving skills';
