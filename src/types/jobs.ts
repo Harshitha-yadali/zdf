@@ -161,3 +161,73 @@ export interface JobTestPattern {
   created_at: string;
   test_pattern?: TestPattern;
 }
+
+export interface ApifySearchConfig {
+  keywords?: string[];
+  location?: string;
+  jobType?: string;
+  experienceLevel?: string;
+  maxResults?: number;
+  [key: string]: any;
+}
+
+export interface JobFetchConfig {
+  id: string;
+  platform_name: string;
+  apify_api_token: string;
+  actor_id: string;
+  search_config: ApifySearchConfig;
+  is_active: boolean;
+  sync_frequency_hours: number;
+  last_sync_at?: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface JobSyncLog {
+  id: string;
+  config_id: string;
+  platform_name: string;
+  sync_started_at: string;
+  sync_completed_at?: string;
+  status: 'running' | 'success' | 'failed' | 'partial';
+  jobs_fetched: number;
+  jobs_created: number;
+  jobs_updated: number;
+  jobs_skipped: number;
+  error_message?: string;
+  sync_metadata?: {
+    apify_run_id?: string;
+    dataset_id?: string;
+    [key: string]: any;
+  };
+  created_at: string;
+}
+
+export interface ApifyJobData {
+  id?: string;
+  title: string;
+  company: string;
+  location?: string;
+  description: string;
+  salary?: string;
+  jobType?: string;
+  experienceLevel?: string;
+  skills?: string[];
+  postedDate?: string;
+  applyUrl: string;
+  [key: string]: any;
+}
+
+export interface ApifySyncResult {
+  success: boolean;
+  logId: string;
+  stats: {
+    fetched: number;
+    created: number;
+    updated: number;
+    skipped: number;
+  };
+  error?: string;
+}

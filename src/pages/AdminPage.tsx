@@ -3,9 +3,11 @@ import { Plus, Edit, Trash2, Save, X, Upload, DollarSign, Tag, Building, User, C
 import { Question, Material, PaymentSettings } from '../types';
 import { supabaseStorage } from '../utils/supabaseStorage';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { AdminApifyConfigManager } from '../components/admin/AdminApifyConfigManager';
+import { AdminJobSyncDashboard } from '../components/admin/AdminJobSyncDashboard';
 
 const AdminPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'questions' | 'materials' | 'payments'>('questions');
+  const [activeTab, setActiveTab] = useState<'questions' | 'materials' | 'payments' | 'apify-config' | 'sync-logs'>('questions');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({
@@ -470,10 +472,10 @@ const AdminPage: React.FC = () => {
         {/* Tabs */}
         <div className="bg-white rounded-lg shadow-md mb-6">
           <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6">
+            <nav className="flex space-x-8 px-6 overflow-x-auto">
               <button
                 onClick={() => setActiveTab('questions')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
                   activeTab === 'questions'
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -483,7 +485,7 @@ const AdminPage: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab('materials')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
                   activeTab === 'materials'
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -493,13 +495,33 @@ const AdminPage: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab('payments')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
                   activeTab === 'payments'
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
                 Payment Settings
+              </button>
+              <button
+                onClick={() => setActiveTab('apify-config')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                  activeTab === 'apify-config'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Apify Config
+              </button>
+              <button
+                onClick={() => setActiveTab('sync-logs')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                  activeTab === 'sync-logs'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Sync Logs
               </button>
             </nav>
           </div>
@@ -639,7 +661,7 @@ const AdminPage: React.FC = () => {
         {activeTab === 'payments' && (
           <div className="space-y-6">
             <h2 className="text-xl font-semibold text-gray-900">Payment Settings</h2>
-            
+
             <div className="bg-white rounded-lg shadow-md p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Base Price Settings</h3>
               <div className="flex items-center space-x-4">
@@ -672,7 +694,7 @@ const AdminPage: React.FC = () => {
                   <span>Add Coupon</span>
                 </button>
               </div>
-              
+
               <div className="space-y-3">
                 {paymentSettings.activeCoupons.map((coupon, index) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -697,6 +719,12 @@ const AdminPage: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Apify Config Tab */}
+        {activeTab === 'apify-config' && <AdminApifyConfigManager />}
+
+        {/* Sync Logs Tab */}
+        {activeTab === 'sync-logs' && <AdminJobSyncDashboard />}
 
         {/* Question Form Modal */}
         {showQuestionForm && (
