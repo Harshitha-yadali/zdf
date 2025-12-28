@@ -744,43 +744,36 @@ function drawEducation(state: PageState, education: any[], PDF_CONFIG: any): num
 }
 
 
-// Draw projects section
+// Draw projects section - Simple bullet point format (like certifications)
 function drawProjects(state: PageState, projects: any[], PDF_CONFIG: any): number {
   if (!projects || projects.length === 0) return 0;
 
-  const githubProjects = projects.filter(project => project.githubUrl);
   let totalHeight = drawSectionTitle(state, 'Projects', PDF_CONFIG);
 
-  projects.forEach((project, index) => {
-    if (!checkPageSpace(state, 25, PDF_CONFIG)) {
-      addNewPage(state, PDF_CONFIG);
-    }
+  // Extract project titles dynamically
+  const projectTitles: string[] = projects
+    .map((project) => toPlainText(project.title) || '')
+    .filter(title => title.trim().length > 0 && !isPlaceholderText(title));
 
-    const titleHeight = drawText(state, project.title, PDF_CONFIG.margins.left, PDF_CONFIG, {
-      fontSize: PDF_CONFIG.fonts.jobTitle.size,
-      fontWeight: PDF_CONFIG.fonts.jobTitle.weight // Already bold
-    });
-    totalHeight += titleHeight;
-    state.currentY += PDF_CONFIG.spacing.bulletListSpacing;
+  if (!projectTitles.length) return totalHeight;
 
-    if (project.bullets && project.bullets.length > 0) {
-      state.currentY += PDF_CONFIG.spacing.bulletListSpacing;
-      project.bullets.forEach((bullet: string) => {
-        const bulletText = `• ${bullet}`;
-        const bulletHeight = drawText(state, bulletText, PDF_CONFIG.margins.left + PDF_CONFIG.spacing.bulletIndent, PDF_CONFIG, {
-          fontSize: PDF_CONFIG.fonts.body.size,
-          maxWidth: PDF_CONFIG.contentWidth - PDF_CONFIG.spacing.bulletIndent
-        });
-        totalHeight += bulletHeight;
-      });
-      state.currentY += PDF_CONFIG.spacing.bulletListSpacing;
-    }
+  // Format as bullet points: • Project1  • Project2  • Project3
+  const projectLine = projectTitles.map(title => `• ${title}`).join('  ');
+  
+  if (!checkPageSpace(state, 15, PDF_CONFIG)) addNewPage(state, PDF_CONFIG);
 
-    if (index < projects.length - 1) {
-      state.currentY += 1;
-      totalHeight += 1;
+  const projectHeight = drawText(
+    state,
+    projectLine,
+    PDF_CONFIG.margins.left,
+    PDF_CONFIG,
+    {
+      fontSize: PDF_CONFIG.fonts.body.size,
+      maxWidth: PDF_CONFIG.contentWidth
     }
-  });
+  );
+  totalHeight += projectHeight;
+  state.currentY += PDF_CONFIG.spacing.bulletListSpacing;
 
   return totalHeight;
 }
