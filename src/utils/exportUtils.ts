@@ -296,7 +296,7 @@ function drawText(
   state.currentY += totalHeight;
   return totalHeight;
 }
-// Robust certifications renderer - Simple one-line comma-separated format
+// Robust certifications renderer - Simple bullet point format on one line
 function renderCertificationsForPDF2(state: PageState, certifications: (string | Certification)[], PDF_CONFIG: any): number {
   const filtered = (certifications || []).filter((c) => {
     if (typeof c === 'string') return c.trim().length > 0 && !isPlaceholderText(c);
@@ -312,7 +312,7 @@ function renderCertificationsForPDF2(state: PageState, certifications: (string |
 
   let totalHeight = drawSectionTitle(state, 'Certifications', PDF_CONFIG);
 
-  // Extract certification titles/names into a simple list
+  // Extract certification titles/names dynamically from API data
   const certNames: string[] = filtered.map((cert) => {
     if (typeof cert === 'object' && cert !== null) {
       const anyC: any = cert;
@@ -323,8 +323,8 @@ function renderCertificationsForPDF2(state: PageState, certifications: (string |
 
   if (!certNames.length) return totalHeight;
 
-  // Join all certifications with " | " separator for clean one-line display
-  const certLine = certNames.join('  |  ');
+  // Format as bullet points: • Cert1  • Cert2  • Cert3
+  const certLine = certNames.map(name => `• ${name}`).join('  ');
   
   if (!checkPageSpace(state, 15, PDF_CONFIG)) addNewPage(state, PDF_CONFIG);
 
