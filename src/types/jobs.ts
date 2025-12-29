@@ -3,12 +3,12 @@
 export interface JobListing {
   id: string;
   company_name: string;
-  company_logo_url?: string;
+   company_logo?: string;
   company_website?: string;
   company_description?: string;
   role_title: string;
   package_amount?: number;
-  package_type?: 'CTC' | 'stipend' | 'hourly';
+  package_currency?: string;
   domain: string;
   location_type: 'Remote' | 'Onsite' | 'Hybrid';
   location_city?: string;
