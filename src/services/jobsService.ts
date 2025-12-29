@@ -89,27 +89,30 @@ class JobsService {
         return null;
       })();
 
-      const insertData: Record<string, any> = {
-        company_name: jobData.company_name,
-        company_logo_url: jobData.company_logo_url || null,
-        company_website: jobData.company_website || null,
-        company_description: jobData.company_description || null,
-        role_title: jobData.role_title,
-        package_amount: jobData.package_amount || null,
-        package_type: jobData.package_type || null,
-        domain: jobData.domain,
-        location_type: jobData.location_type,
-        location_city: jobData.location_city || null,
-        experience_required: jobData.experience_required,
-        qualification: jobData.qualification,
-        eligible_years: eligibleYears,
-        short_description: jobData.short_description,
-        full_description: jobData.full_description,
-        description: jobData.full_description, // Duplicate for compatibility
-        application_link: jobData.application_link,
-        posted_date: new Date().toISOString(),
-        source_api: 'manual_admin',
-        is_active: jobData.is_active !== undefined ? jobData.is_active : true,
+     const insertData: Record<string, any> = {
+  company_name: jobData.company_name,
+  company_logo: jobData.company_logo_url || null,  // CHANGED: company_logo_url → company_logo
+  company_website: jobData.company_website || null,
+  company_description: jobData.company_description || null,
+  role_title: jobData.role_title,
+  package_amount: jobData.package_amount || null,
+  package_currency: jobData.package_currency || null,  // CHANGED: Added package_currency
+  package_type: jobData.package_type || null,
+  domain: jobData.domain,
+  location_type: jobData.location_type,
+  location_city: jobData.location_city || null,
+  experience_required: jobData.experience_required,
+  qualification: jobData.qualification,
+  eligible_years: eligibleYears,
+  short_description: jobData.short_description,
+  full_description: jobData.full_description,
+  description: jobData.full_description,
+  application_link: jobData.application_link,
+  posted_date: new Date().toISOString(),
+  source_api: 'manual_admin',
+  is_active: jobData.is_active !== undefined ? jobData.is_active : true,
+  
+
 
         // Referral information
         referral_person_name: jobData.referral_person_name || null,
