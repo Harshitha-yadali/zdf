@@ -109,9 +109,9 @@ export const JobCard: React.FC<JobCardProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
           {/* Company Logo */}
           <div className="flex-shrink-0 w-16 h-16 sm:w-16 sm:h-16 bg-slate-800/50 rounded-lg border border-slate-700/50 flex items-center justify-center p-1 sm:p-2 overflow-hidden">
-            {job.company_logo_url ? (
+            {job.company_logo ? (
               <img
-                src={job.company_logo_url}
+                src={job.company_logo}
                 alt={`${job.company_name} logo`}
                 className="w-full h-full object-contain object-center"
                 loading="lazy"
