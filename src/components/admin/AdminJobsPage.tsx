@@ -281,9 +281,9 @@ export const AdminJobsPage: React.FC = () => {
                 <div className="flex items-start space-x-4">
                   {/* Company Logo */}
                   <div className="flex-shrink-0 w-16 h-16 bg-gray-100 dark:bg-dark-200 rounded-lg overflow-hidden border border-gray-200 dark:border-dark-300 flex items-center justify-center">
-                    {job.company_logo_url ? (
+                    {job.company_logo ? (
                       <img
-                        src={job.company_logo_url}
+                        src={job.company_logo} 
                         alt={`${job.company_name} logo`}
                         className="max-w-full max-h-full object-contain"
                       />
